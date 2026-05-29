@@ -1,0 +1,8 @@
+---
+import { sidebar } from '../../config/sidebar';
+const currentPath = Astro.url.pathname;
+---
+<aside class="doc-sidebar" aria-label="文档目录">
+  <a class="sidebar-home" href="/docs">LLM Notes 文档</a>
+  {sidebar.map((group) => <section><h3>{group.title}</h3>{group.items.map((item) => <a class:list={[currentPath === item.slug && 'active']} href={item.slug}>{item.title}</a>)}</section>)}
+</aside>

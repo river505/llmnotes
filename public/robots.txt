@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://llmnotes.cn/sitemap-index.xml

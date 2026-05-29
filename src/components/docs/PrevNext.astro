@@ -1,0 +1,7 @@
+---
+const { prev, next } = Astro.props;
+---
+<nav class="prev-next" aria-label="上一篇下一篇">
+  {prev ? <a href={prev.href}><span>上一篇</span><strong>{prev.title}</strong></a> : <span></span>}
+  {next ? <a href={next.href} class="next"><span>下一篇</span><strong>{next.title}</strong></a> : <span></span>}
+</nav>

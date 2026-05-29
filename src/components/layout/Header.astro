@@ -1,0 +1,75 @@
+---
+import { SITE_NAME } from '../../consts';
+import { navItems } from '../../config/site';
+const currentPath = Astro.url.pathname;
+---
+<header class="site-header">
+  <a class="brand" href="/" aria-label="LLM Notes 首页"><span class="brand-mark">LN</span><span>{SITE_NAME}</span></a>
+  <nav class="desktop-nav" aria-label="主导航">
+    {navItems.map((item) => <a class:list={[currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href)), 'nav-active']} href={item.href}>{item.label}</a>)}
+  </nav>
+  <div class="header-actions">
+    <button class="icon-button search-trigger" type="button" aria-label="打开搜索" title="搜索">⌕</button>
+    <a class="icon-button" href="https://github.com/" target="_blank" rel="noreferrer" aria-label="GitHub" title="GitHub">GH</a>
+    <button class="icon-button theme-toggle" type="button" aria-label="切换深色模式" title="主题">◐</button>
+    <button class="icon-button menu-toggle" type="button" aria-label="打开菜单" aria-expanded="false" title="菜单">☰</button>
+  </div>
+</header>
+<div class="mobile-panel" id="mobile-panel" hidden>
+  {navItems.map((item) => <a href={item.href}>{item.label}</a>)}
+</div>
+<div class="search-modal" id="search-modal" hidden role="dialog" aria-modal="true" aria-label="站内搜索">
+  <div class="search-backdrop" data-close-search></div>
+  <section class="search-panel">
+    <div class="search-head"><strong>搜索 LLM Notes</strong><button class="icon-button" type="button" data-close-search aria-label="关闭搜索">×</button></div>
+    <input id="site-search-input" class="search-input" type="search" placeholder="搜索 Transformer / RAG / Agent / PPO / 多模态" autocomplete="off" />
+    <div class="quick-tags" aria-label="推荐关键词">
+      {['Transformer','RAG','Agent','PPO','多模态','面试'].map((tag) => <button type="button" data-search-keyword={tag}>{tag}</button>)}
+    </div>
+    <div id="search-results" class="search-results"><p class="muted">输入关键词后展示结果。生产构建会优先使用 Pagefind 索引。</p></div>
+  </section>
+</div>
+<script is:inline>
+  const themeButton = document.querySelector('.theme-toggle');
+  themeButton?.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  });
+  const menuButton = document.querySelector('.menu-toggle');
+  const mobilePanel = document.getElementById('mobile-panel');
+  menuButton?.addEventListener('click', () => {
+    const open = mobilePanel.hasAttribute('hidden');
+    mobilePanel.toggleAttribute('hidden', !open);
+    menuButton.setAttribute('aria-expanded', String(open));
+  });
+  const modal = document.getElementById('search-modal');
+  const input = document.getElementById('site-search-input');
+  const results = document.getElementById('search-results');
+  const fallbackDocs = [
+    ['什么是大模型、基础模型与 LLM','/docs/llm-basics/what-is-llm','解释大模型、基础模型和 LLM 的边界。','LLM 基础'],
+    ['Token、Tokenizer 与词表','/docs/llm-basics/tokenizer','理解 token、分词器和词表。','LLM 基础'],
+    ['用 4 个 Token 看懂 Attention','/docs/transformer/attention-four-tokens','用小矩阵理解注意力机制。','Transformer'],
+    ['RAG 是什么','/docs/rag/what-is-rag','检索增强生成的基本流程。','RAG'],
+    ['文档解析与切分 Chunking','/docs/rag/chunking','RAG 文档切分策略。','RAG'],
+    ['Agent 是什么','/docs/agent/what-is-agent','模型、工具、记忆与规划。','Agent'],
+    ['PPO 原理','/docs/rl/ppo','强化学习与 RLHF 中的 PPO。','强化学习'],
+    ['Code Agent 项目','/projects/code-agent','代码智能体项目实战。','项目实战'],
+  ];
+  async function runSearch(q) {
+    const query = q.trim();
+    if (!query) { results.innerHTML = '<p class="muted">输入关键词后展示结果。</p>'; return; }
+    try {
+      if (!window.__pagefind) window.__pagefind = await import('/pagefind/pagefind.js');
+      const search = await window.__pagefind.search(query);
+      const data = await Promise.all(search.results.slice(0, 8).map((r) => r.data()));
+      if (data.length) { results.innerHTML = data.map((item) => '<a class="search-result" href="'+item.url+'"><strong>'+item.meta.title+'</strong><span>'+((item.excerpt || '').replaceAll('<mark>','').replaceAll('</mark>',''))+'</span></a>').join(''); return; }
+    } catch (_) {}
+    const matched = fallbackDocs.filter(([t,,d,c]) => (t+d+c).toLowerCase().includes(query.toLowerCase()));
+    results.innerHTML = matched.length ? matched.map(([t,u,d,c]) => '<a class="search-result" href="'+u+'"><strong>'+t+'</strong><span>'+d+'</span><em>'+c+'</em></a>').join('') : '<p class="muted">暂未找到结果，可以试试 Transformer、RAG、Agent。</p>';
+  }
+  document.querySelectorAll('.search-trigger').forEach((btn) => btn.addEventListener('click', () => { modal.hidden = false; setTimeout(() => input?.focus(), 0); }));
+  document.querySelectorAll('[data-close-search]').forEach((btn) => btn.addEventListener('click', () => { modal.hidden = true; }));
+  document.querySelectorAll('[data-search-keyword]').forEach((btn) => btn.addEventListener('click', () => { input.value = btn.dataset.searchKeyword; runSearch(input.value); }));
+  input?.addEventListener('input', (event) => runSearch(event.target.value));
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !modal.hidden) modal.hidden = true; });
+</script>

@@ -1,0 +1,12 @@
+---
+import { navItems, categories } from '../../config/site';
+---
+<footer class="site-footer">
+  <div class="footer-grid">
+    <section><h2>LLM Notes</h2><p>大模型学习与工程实践指南。系统梳理 LLM、RAG、Agent、多模态、强化学习、AI 面试与项目实战。</p></section>
+    <section><h3>导航</h3>{navItems.slice(0,8).map((item) => <a href={item.href}>{item.label}</a>)}</section>
+    <section><h3>专题</h3>{categories.slice(0,6).map((item) => <a href={item.href}>{item.title}</a>)}</section>
+    <section><h3>联系</h3><a href="mailto:contact@llmnotes.cn">contact@llmnotes.cn</a><a href="/contact">抖音二维码</a><a href="/sitemap">站点地图</a></section>
+  </div>
+  <p class="copyright">© 2026 LLM Notes. All rights reserved. 转载请注明来源：LLM Notes。</p>
+</footer>

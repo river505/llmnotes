@@ -1,0 +1,9 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+const entries = (await getCollection('roadmaps')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+---
+<PageLayout title="学习路线 | LLM Notes" description="从零基础、算法工程、大模型应用、RAG、Agent、多模态、强化学习到 AI 面试的系统路线。">
+  <section class="section"><p class="eyebrow">LLM Notes</p><h1>学习路线</h1><p class="lead">从零基础、算法工程、大模型应用、RAG、Agent、多模态、强化学习到 AI 面试的系统路线。</p></section>
+  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/roadmaps/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+</PageLayout>

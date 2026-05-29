@@ -1,0 +1,58 @@
+---
+const { unlockRequired = true } = Astro.props;
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+---
+<div class="doc-gate" data-doc-gate data-unlock-required={String(unlockRequired)} data-site-key={siteKey}>
+  <div class="prose doc-content collapsed" data-doc-content><slot /></div>
+  {unlockRequired && <div class="doc-fade" data-doc-fade><div class="unlock-card"><p>为了减少批量爬取，完整内容需要通过一次人机验证后展开。验证后 12 小时内无需重复验证。</p><button class="primary-button" type="button" data-open-unlock>展开全部</button></div></div>}
+</div>
+<div class="unlock-modal" data-unlock-modal hidden role="dialog" aria-modal="true" aria-label="展开完整内容">
+  <div class="modal-backdrop" data-close-unlock></div>
+  <section class="modal-card">
+    <div class="modal-head"><h2>展开完整内容</h2><button class="icon-button" type="button" data-close-unlock aria-label="关闭">×</button></div>
+    <p>为了减少批量爬取和恶意访问，请先完成人机验证。</p>
+    <div class="turnstile-box" data-turnstile-box>{siteKey ? '正在加载验证组件...' : '本地尚未配置 PUBLIC_TURNSTILE_SITE_KEY。开发环境可直接解锁预览。'}</div>
+    <p class="unlock-message" data-unlock-message></p>
+    {!siteKey && <button class="secondary-button" type="button" data-dev-unlock>开发环境解锁</button>}
+  </section>
+</div>
+<script is:inline define:vars={{ siteKey }}>
+  const gate = document.querySelector('[data-doc-gate]');
+  const content = document.querySelector('[data-doc-content]');
+  const fade = document.querySelector('[data-doc-fade]');
+  const modal = document.querySelector('[data-unlock-modal]');
+  const message = document.querySelector('[data-unlock-message]');
+  const turnstileBox = document.querySelector('[data-turnstile-box]');
+  function unlock() { content?.classList.remove('collapsed'); fade?.remove(); modal.hidden = true; }
+  async function checkStatus() {
+    try { const res = await fetch('/api/unlock/status'); const data = await res.json(); if (data.unlocked) unlock(); } catch (_) {}
+  }
+  async function verify(token) {
+    message.textContent = '正在验证...';
+    try {
+      const res = await fetch('/api/turnstile/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }) });
+      const data = await res.json();
+      if (data.ok) { message.textContent = '验证通过，已展开全文。'; unlock(); return; }
+      message.textContent = data.message || '验证失败，请刷新后重试。';
+    } catch (_) { message.textContent = '网络异常，请稍后重试。'; }
+  }
+  function loadTurnstile() {
+    if (!siteKey || window.turnstile) {
+      if (window.turnstile && turnstileBox && !turnstileBox.dataset.rendered) {
+        turnstileBox.textContent = '';
+        window.turnstile.render(turnstileBox, { sitekey: siteKey, callback: verify });
+        turnstileBox.dataset.rendered = 'true';
+      }
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.async = true; script.defer = true; script.onload = loadTurnstile;
+    document.head.appendChild(script);
+  }
+  if (gate?.dataset.unlockRequired === 'false') unlock(); else checkStatus();
+  document.querySelector('[data-open-unlock]')?.addEventListener('click', () => { modal.hidden = false; loadTurnstile(); });
+  document.querySelectorAll('[data-close-unlock]').forEach((el) => el.addEventListener('click', () => { modal.hidden = true; }));
+  document.querySelector('[data-dev-unlock]')?.addEventListener('click', unlock);
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modal && !modal.hidden) modal.hidden = true; });
+</script>

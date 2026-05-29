@@ -1,0 +1,9 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+const entries = (await getCollection('interview')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+---
+<PageLayout title="AI 面试指南 | LLM Notes" description="面向算法岗、工程岗和研究生求职的大模型高频面试题、项目追问和论文复述模板。">
+  <section class="section"><p class="eyebrow">LLM Notes</p><h1>AI 面试指南</h1><p class="lead">面向算法岗、工程岗和研究生求职的大模型高频面试题、项目追问和论文复述模板。</p></section>
+  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/interview/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+</PageLayout>

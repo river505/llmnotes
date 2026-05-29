@@ -1,0 +1,8 @@
+---
+import PageLayout from '../components/layout/PageLayout.astro';
+import { categories, navItems } from '../config/site';
+---
+<PageLayout title="站点地图 | LLM Notes" description="LLM Notes 用户可读站点地图。">
+  <section class="section"><h1>站点地图</h1><p class="lead">快速浏览学习路线、文档分类、面试、项目实战、论文精读、资源、关于和联系。</p></section>
+  <section class="section"><div class="card-grid">{navItems.map((item) => <a class="card" href={item.href}><h3>{item.label}</h3><p>进入 {item.label} 页面。</p></a>)}{categories.map((item) => <a class="card" href={item.href}><h3>{item.title}</h3><p>{item.description}</p></a>)}</div></section>
+</PageLayout>

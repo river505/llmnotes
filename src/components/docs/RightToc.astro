@@ -1,0 +1,9 @@
+---
+const headings = Astro.props.headings ?? [];
+---
+<aside class="right-toc" aria-label="本文目录">
+  <strong>本文目录</strong>
+  {headings.filter((h) => h.depth > 1 && h.depth < 4).map((h) => <a class={
+    'toc-depth-' + h.depth
+  } href={'#' + h.slug}>{h.text}</a>)}
+</aside>

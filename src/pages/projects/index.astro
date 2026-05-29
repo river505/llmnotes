@@ -1,0 +1,9 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+const entries = (await getCollection('projects')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+---
+<PageLayout title="项目实战 | LLM Notes" description="把 RAG、Code Agent、推荐系统、多模态和医学 AI 沉淀成能讲清楚的项目库。">
+  <section class="section"><p class="eyebrow">LLM Notes</p><h1>项目实战</h1><p class="lead">把 RAG、Code Agent、推荐系统、多模态和医学 AI 沉淀成能讲清楚的项目库。</p></section>
+  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/projects/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+</PageLayout>

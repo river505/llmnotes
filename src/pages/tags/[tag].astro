@@ -1,0 +1,17 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+import { tagSlug } from '../../config/tags';
+export async function getStaticPaths() {
+  const collections = await Promise.all(['docs','projects','papers','roadmaps','interview'].map((name) => getCollection(name)));
+  const tags = new Set(collections.flat().flatMap((entry) => entry.data.tags));
+  const paths = new Map();
+  for (const tag of tags) paths.set(tagSlug(tag), tag);
+  return [...paths.entries()].map(([slug, tag]) => ({ params: { tag: slug }, props: { tag } }));
+}
+const { tag } = Astro.props;
+const collections = await Promise.all(['docs','projects','papers','roadmaps','interview'].map((name) => getCollection(name)));
+const entries = collections.flat().filter((entry) => entry.data.tags.includes(tag));
+const href = (entry) => (entry.collection === 'docs' ? '/docs/' : '/' + entry.collection + '/') + entry.id;
+---
+<PageLayout title={tag + ' | LLM Notes 标签'} description={tag + ' 相关文章列表。'}><section class="section"><h1>{tag}</h1><p class="lead">共 {entries.length} 篇相关文章。</p></section><section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={href(entry)}><strong>{entry.data.title}</strong><p>{entry.data.description}</p></a>)}</div></section></PageLayout>

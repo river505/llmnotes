@@ -1,0 +1,10 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+import { tagSlug } from '../../config/tags';
+const collections = await Promise.all(['docs','projects','papers','roadmaps','interview'].map((name) => getCollection(name)));
+const counts = new Map();
+for (const entry of collections.flat()) for (const tag of entry.data.tags) counts.set(tag, (counts.get(tag) || 0) + 1);
+const tags = [...counts.entries()].sort((a,b) => b[1] - a[1]);
+---
+<PageLayout title="标签 | LLM Notes" description="LLM Notes 标签索引。"><section class="section"><h1>标签</h1><p class="lead">按标签查找相关文章。</p></section><section class="section"><div class="tags">{tags.map(([tag,count]) => <a class="tag" href={'/tags/' + tagSlug(tag)}>{tag} · {count}</a>)}</div></section></PageLayout>

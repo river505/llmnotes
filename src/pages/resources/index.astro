@@ -1,0 +1,8 @@
+---
+import PageLayout from '../../components/layout/PageLayout.astro';
+const resources = ['开源模型','数据集','论文工具','AI 开发工具','向量数据库','Agent 框架','RAG 框架','部署工具','学习资料','面试资源','软件下载'];
+---
+<PageLayout title="资源 | LLM Notes" description="大模型学习和工程实践资源清单。">
+  <section class="section"><p class="eyebrow">Resources</p><h1>资源</h1><p class="lead">整理开源模型、数据集、论文工具、开发工具、向量数据库、Agent 框架、RAG 框架和部署工具。</p></section>
+  <section class="section"><div class="card-grid">{resources.map((name) => <article class="card"><h3>{name}</h3><p>名称、类型、一句话说明、适合场景、官网链接、是否免费、推荐指数和相关教程会在后续版本补全。</p></article>)}</div></section>
+</PageLayout>

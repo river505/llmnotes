@@ -1,50 +1,30 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getCollection } from 'astro:content';
+import PageLayout from '../components/layout/PageLayout.astro';
+import { categories, roadmapCards } from '../config/site';
+const all = await Promise.all(['docs','projects','papers','roadmaps','interview'].map((name) => getCollection(name)));
+const entries = all.flat().filter((entry) => !entry.data.draft).sort((a,b) => b.data.updated.valueOf() - a.data.updated.valueOf());
+const latest = entries.slice(0, 6);
+const topics = [
+  ['用 4 个 Token 看懂 Attention','/docs/transformer/attention-four-tokens','把 Q/K/V、softmax 和加权求和压到一个小例子里。'],
+  ['PPO 与 RLHF','/docs/rl/ppo','理解 PPO clipped objective 如何服务于大模型对齐。'],
+  ['RAG 从入门到工程化','/docs/rag/what-is-rag','从检索、切分、重排到评测和失败排查。'],
+  ['Code Agent 如何变成软件工程智能体','/projects/code-agent','把工具调用、规划、测试和代码修改串成项目。'],
+];
 ---
-
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut2!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to <a href="https://docs.astro.build/"
-					>read the docs
-				</a> or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out <a
-					href="https://github.com/Charca/astro-blog-template"
-					>astro-blog-template
-				</a> by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<PageLayout>
+  <section class="hero">
+    <div>
+      <p class="eyebrow">LLM Notes.cn</p>
+      <h1>大模型学习与工程实践指南</h1>
+      <p class="lead">系统梳理 LLM、RAG、Agent、多模态、强化学习、AI 面试、项目实战与论文精读，面向 AI 研究生、算法工程师、开发者和面试准备者。</p>
+      <div class="actions"><a class="primary-button" href="/docs">开始学习</a><a class="secondary-button" href="/roadmaps">查看学习路线</a></div>
+      <button class="search-hero search-trigger" type="button" aria-label="搜索"><span>⌕</span><span>搜索 Transformer / RAG / Agent / PPO / 多模态</span></button>
+    </div>
+    <aside class="hero-panel"><h2>推荐阅读顺序</h2><div class="route-list"><a href="/docs/transformer/attention-four-tokens"><span>01</span><div><strong>Transformer</strong><p>先建立模型结构直觉。</p></div></a><a href="/docs/rag/what-is-rag"><span>02</span><div><strong>RAG 与 Agent</strong><p>进入工程落地链路。</p></div></a><a href="/projects/code-agent"><span>03</span><div><strong>项目实战</strong><p>沉淀可复述项目。</p></div></a></div></aside>
+  </section>
+  <section class="section"><div class="section-head"><div><h2>核心入口</h2><p>按专题组织，不做碎片化博客。</p></div><a class="secondary-button" href="/docs">全部文档</a></div><div class="card-grid">{categories.map((item) => <a class="card" href={item.href}><h3>{item.title}</h3><p>{item.description}</p></a>)}</div></section>
+  <section class="section"><div class="section-head"><div><h2>学习路线</h2><p>适合长期推进，也适合面试前集中复盘。</p></div></div><div class="card-grid">{roadmapCards.map((item) => <a class="card" href={item.href}><h3>{item.title}</h3><p>{item.description}</p></a>)}</div></section>
+  <section class="section"><div class="section-head"><div><h2>最新更新</h2><p>最近更新的文档、项目、论文和路线。</p></div></div><div class="article-list">{latest.map((entry) => <a class="article-row" href={(entry.collection === 'docs' ? '/docs/' : '/' + entry.collection + '/') + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="meta"><span>{entry.data.section}</span><span>{entry.data.updated.toISOString().slice(0,10)}</span></div></a>)}</div></section>
+  <section class="section"><div class="section-head"><div><h2>推荐专题</h2><p>适合作为本站第一批王牌内容扩写。</p></div></div><div class="card-grid">{topics.map(([title, href, desc]) => <a class="card" href={href}><h3>{title}</h3><p>{desc}</p></a>)}</div></section>
+</PageLayout>

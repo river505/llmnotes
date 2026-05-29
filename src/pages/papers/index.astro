@@ -1,0 +1,9 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+const entries = (await getCollection('papers')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+---
+<PageLayout title="论文精读 | LLM Notes" description="用一句话总结、核心方法、实验设计、局限和组会讲法来拆解经典 AI 论文。">
+  <section class="section"><p class="eyebrow">LLM Notes</p><h1>论文精读</h1><p class="lead">用一句话总结、核心方法、实验设计、局限和组会讲法来拆解经典 AI 论文。</p></section>
+  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/papers/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+</PageLayout>

@@ -1,0 +1,26 @@
+---
+import { getCollection, render } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import DocPreviewGate from '../../components/docs/DocPreviewGate.astro';
+import RightToc from '../../components/docs/RightToc.astro';
+import { tagSlug } from '../../config/tags';
+export async function getStaticPaths() {
+  const entries = (await getCollection('papers')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+---
+<PageLayout title={entry.data.title + ' | LLM Notes'} description={entry.data.description}>
+  <div class="docs-layout" style="grid-template-columns:minmax(0, 820px) 220px; justify-content:center;">
+    <article class="doc-main" data-pagefind-body>
+      <Breadcrumb items={[{ label: '论文精读', href: '/papers' }, { label: entry.data.title, href: Astro.url.pathname }]} />
+      <header class="doc-header"><h1>{entry.data.title}</h1><p class="lead">{entry.data.description}</p><div class="meta"><span>{entry.data.difficulty}</span><span>更新：{entry.data.updated.toISOString().slice(0,10)}</span></div><div class="tags">{entry.data.tags.map((tag) => <a class="tag" href={'/tags/' + tagSlug(tag)}>{tag}</a>)}</div></header>
+      <section class="summary-card"><h2>阅读目标</h2><p>{entry.data.description}</p></section>
+      <DocPreviewGate unlockRequired={entry.data.unlockRequired}><Content /></DocPreviewGate>
+      <section class="summary-card"><p>本文为 LLM Notes 原创或整理内容，仅用于学习交流。转载请注明来源：LLM Notes。</p></section>
+    </article>
+    <RightToc headings={headings} />
+  </div>
+</PageLayout>

@@ -1,0 +1,39 @@
+---
+import { getCollection, render } from 'astro:content';
+import PageLayout from '../../components/layout/PageLayout.astro';
+import Sidebar from '../../components/docs/Sidebar.astro';
+import RightToc from '../../components/docs/RightToc.astro';
+import { tagSlug } from '../../config/tags';
+import Breadcrumb from '../../components/common/Breadcrumb.astro';
+import DocPreviewGate from '../../components/docs/DocPreviewGate.astro';
+import PrevNext from '../../components/docs/PrevNext.astro';
+import { tagSlug } from '../../config/tags';
+
+export async function getStaticPaths() {
+  const entries = (await getCollection('docs')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.category.localeCompare(b.data.category) || a.data.order - b.data.order);
+  return entries.map((entry, index) => ({ params: { slug: entry.id }, props: { entry, prev: entries[index - 1], next: entries[index + 1] } }));
+}
+const { entry, prev, next } = Astro.props;
+const { Content, headings } = await render(entry);
+const title = entry.data.title + ' | LLM Notes';
+const hrefFor = (item) => item ? '/docs/' + item.id : undefined;
+---
+<PageLayout title={title} description={entry.data.description}>
+  <div class="docs-layout">
+    <Sidebar />
+    <article class="doc-main" data-pagefind-body>
+      <Breadcrumb items={[{ label: '文档', href: '/docs' }, { label: entry.data.section || entry.data.category, href: '/docs' }, { label: entry.data.title, href: Astro.url.pathname }]} />
+      <header class="doc-header">
+        <h1>{entry.data.title}</h1>
+        <p class="lead">{entry.data.description}</p>
+        <div class="meta"><span>{entry.data.difficulty}</span><span>更新：{entry.data.updated.toISOString().slice(0,10)}</span><span>{entry.data.readingTime || '约 8 分钟'}</span></div>
+        <div class="tags">{entry.data.tags.map((tag) => <a class="tag" href={'/tags/' + tagSlug(tag)}>{tag}</a>)}</div>
+      </header>
+      <section class="summary-card"><h2>本文解决什么问题</h2><p>{entry.data.description}</p><p>读完后，你可以把概念、工程直觉和常见面试追问串成一条可复述的学习链路。</p></section>
+      <DocPreviewGate unlockRequired={entry.data.unlockRequired}><Content /></DocPreviewGate>
+      <PrevNext prev={prev && { title: prev.data.title, href: hrefFor(prev) }} next={next && { title: next.data.title, href: hrefFor(next) }} />
+      <section class="summary-card"><p>本文为 LLM Notes 原创或整理内容，仅用于学习交流。若有错误、引用不当或版权问题，请通过联系页反馈。转载请注明来源：LLM Notes。</p></section>
+    </article>
+    <RightToc headings={headings} />
+  </div>
+</PageLayout>
