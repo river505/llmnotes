@@ -15,6 +15,7 @@ const { unlockRequired = true } = Astro.props;
   </section>
 </div>
 <script is:inline>
+(() => {
   const gate = document.querySelector('[data-doc-gate]');
   const content = document.querySelector('[data-doc-content]');
   const fade = document.querySelector('[data-doc-fade]');
@@ -83,4 +84,5 @@ const { unlockRequired = true } = Astro.props;
   document.querySelector('[data-open-unlock]')?.addEventListener('click', () => { modal.hidden = false; loadTurnstile(); });
   document.querySelectorAll('[data-close-unlock]').forEach((el) => el.addEventListener('click', () => { modal.hidden = true; }));
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modal && !modal.hidden) modal.hidden = true; });
+})();
 </script>
