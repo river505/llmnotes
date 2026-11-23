@@ -1,83 +1,118 @@
 ---
-title: "用 4 个 Token 看懂 Attention"
-description: "用 4 个 token 的小例子拆解 Attention 的 Q、K、V、打分和加权求和。"
+title: "从四个 Token 推导 Self-Attention"
+description: "完整计算 Q/K/V、缩放打分、Softmax 和 Value 聚合，并讨论因果掩码与张量形状。"
 category: "transformer"
 section: "Transformer 专题"
 tags: ["Transformer","Attention","QKV"]
 difficulty: "入门"
 order: 1
-updated: "2026-07-16"
+updated: "2026-11-23"
 created: "2026-05-29"
 draft: false
 featured: true
 cover: ""
-readingTime: "约 7 分钟"
+readingTime: "约 13 分钟"
 unlockRequired: true
 previewRatio: 0.35
 ---
 
-## 本文解决什么问题
+## 从四个 Token 的数据流开始
 
-Attention 这个词很容易被讲玄：什么“关注重要信息”“动态加权上下文”。这些说法不算错，但不够具体。本文只用 4 个 token 走一遍计算过程，目标是让你知道 Q、K、V 分别在干什么，注意力分数从哪里来，最后为什么会得到新的表示。
+Attention 并不是一个“关注重要词语”的固定规则。给定一组输入表示，它先用可学习投影得到 Query、Key 和 Value，再根据输入内容动态计算位置间的联系。每一个新输入序列都可能产生不同的注意力矩阵。
 
-## 核心结论
+为了理解完整的数据流，可以暂时忽略 Batch 维度，假设序列长度 N=4，模型输入维度 d_model=2，单个头的 Key 维度 d_k=2。这虽然比真实模型简单得多，但不会改变计算逻辑。
 
-Self-Attention 做的事情是：让序列里的每个 token 根据自己当前的需求，从同一序列的其他 token 中取信息。它不是固定窗口，也不是简单平均，而是为每个 token 计算一组权重，再对 value 做加权求和。
+## 输入到 Q、K、V：三个投影各司其职
 
-一句话记法：Q 表示“我想找什么”，K 表示“我有什么特征可以被别人匹配”，V 表示“如果别人关注我，我能贡献什么信息”。
+记输入矩阵 X∈ℝ^(4×2)。常见的 Self-Attention 使用独立参数矩阵把 X 投影为：
 
-## 概念解释
+$$
+Q=XW_Q,\quad K=XW_K,\quad V=XW_V.
+$$
 
-假设一句话被切成 4 个 token：
+普通写法：Q = X @ W_Q；K = X @ W_K；V = X @ W_V。
 
-```txt
-[我, 喜欢, 机器, 学习]
-```
+三者由同一序列生成，但参数不要求相同。Query 负责构造当前位置的查询向量，Key 负责供其他 Query 匹配，Value 则承载真正被聚合的信息。这种解释只是帮助理解计算角色，不能把 Q/K/V 当成固定语义标签。
 
-每个 token 先通过 embedding 变成向量。随后，模型用三组可学习矩阵把每个向量投影成 Q、K、V。对“学习”这个 token 来说，它的 Q 会分别和 4 个 token 的 K 做点积，得到 4 个相关性分数。分数经过缩放和 softmax 后变成权重，再用这些权重加权 4 个 V，得到“学习”这个位置的新向量。
+为了方便手算，假设投影后四行 Query 和 Key 都是 (1,0)、(0,1)、(1,1)、(1,-1)，而 Value 分别取 (1,0)、(0,1)、(1,1)、(2,0)。这些具体数值是教学示例，不是训练好的模型参数。
 
-## 数学/工程直觉
+## 第一轮矩阵乘法：得到谁与谁的匹配分数
 
-矩阵形式通常写成：
+每个 Query 与所有 Key 做内积，产生 4×4 分数矩阵：
 
-```txt
-Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) V
-```
+$$
+S=QK^\top=
+\begin{bmatrix}
+1&0&1&1\\
+0&1&1&-1\\
+1&1&2&0\\
+1&-1&0&2
+\end{bmatrix}.
+$$
 
-这里的 `QK^T` 会得到一个 4 x 4 的分数矩阵。第 i 行表示第 i 个 token 看其他 token 的分数；第 j 列表示其他 token 对第 j 个 token 的关注程度。softmax 让每一行变成概率分布，最后乘以 V 就是在“取信息”。
+普通写法：S[i,j] = dot(Q[i], K[j])；S shape = [4,4]。
 
-工程上，Attention 的好处是并行计算方便，长距离依赖也能直接建模；代价是标准 self-attention 的计算和显存通常随序列长度平方增长。长上下文模型会围绕这个瓶颈做很多优化。
+第 i 行对应第 i 个位置对所有 Key 的分数。注意这里还没有进行归一化，分数也不代表概率。它们是通过当前输入与投影矩阵确定的兼容性度量。
 
-## 伪代码
+## 缩放与 Softmax：将分数转成归一化权重
 
-```txt
-输入：4 个 token 的 embedding，形状为 [4, d_model]
-1. 线性投影得到 Q、K、V
-2. 计算 scores = Q @ K.T
-3. scores 除以 sqrt(d_k)
-4. 对每一行做 softmax，得到 attention weights
-5. output = weights @ V
-输出：4 个带上下文信息的新向量
-```
+Scaled Dot-Product Attention 先除以 √d_k，再在 Key 维度应用 Softmax：
 
-这一步只是一层 Attention。真实 Transformer 会叠很多层，并使用多头注意力，让不同 head 学不同类型的关系。
+$$
+A_{ij}=
+\frac{\exp(S_{ij}/\sqrt{d_k})}
+{\sum_{m=1}^{4}\exp(S_{im}/\sqrt{d_k})}.
+$$
 
-## 常见误区
+普通写法：A[i,j] = exp(S[i,j]/sqrt(dk)) / sum_m exp(S[i,m]/sqrt(dk))。
 
-第一，把注意力权重直接当解释。权重能提供线索，但不等于严格因果解释，尤其在多层多头结构里更要谨慎。
+第三个 Query 的分数行是 (1,1,2,0)。由于 d_k=2，经过缩放后约为 (0.707,0.707,1.414,0)，其 Softmax 权重约为 (0.221,0.221,0.449,0.109)。
 
-第二，以为 Attention 会自动理解位置。原始 self-attention 本身对顺序不敏感，需要位置编码或相对位置机制提供顺序信息。
+这些权重是动态产生的，四项非负且合计为 1。它们表示第三个位置读取四个 Value 的相对比例，但不等同于可解释的语义因果贡献。
 
-第三，只记公式，不看形状。面试里把 `[seq_len, d_model]`、`[seq_len, seq_len]`、`[seq_len, d_v]` 这些形状说清楚，往往比背一句定义更有说服力。
+## 第二轮矩阵乘法：真正的信息聚合
 
-## 面试追问
+接下来将权重矩阵乘以 V：
 
-1. Q、K、V 的直观含义分别是什么？
-2. 为什么 `QK^T` 会得到 token 两两之间的关系？
-3. self-attention 和 cross-attention 有什么区别？
-4. Attention 的计算复杂度为什么和序列长度平方相关？
-5. 多头注意力相比单头注意力增加了什么表达能力？
+$$
+O=AV=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V.
+$$
 
-## 推荐阅读
+普通写法：Output = softmax(Q @ K.T / sqrt(dk)) @ V。
 
-下一篇可以看 `为什么要除以 sqrt(d_k)`。它解释的是公式里最容易被忽略、但对训练稳定性很关键的一项。
+对于第三个位置，按照上面的教学数值，输出约为 (0.888,0.670)。第一维由第 1、3、4 行 Value 的加权和得到；第二维由第 2、3 行 Value 的加权和得到。
+
+整个输出 O 的维度为 4×2。它不是在四个输入位置中选一个，而是为每个位置生成新的上下文表示。这种加权聚合是 Self-Attention 的核心计算。
+
+## 因果掩码如何改变这个例子
+
+在 Decoder-only 自回归语言模型中，第 i 个位置不能读取未来 Token。掩码在 Softmax 之前将禁止位置的分数设为负无穷：
+
+$$
+A=\operatorname{softmax}\left(S/\sqrt{d_k}+M\right).
+$$
+
+普通写法：A = softmax(scaled_scores + causal_mask)，future entries of mask are -infinity。
+
+第三个位置因此无法读取第四个 Value。它只在前三个位置上归一化，对应教学权重约为 (0.248,0.248,0.504,0)，输出也随之变化。
+
+这说明 Mask 不是在最终输出后删除未来位置，而是在构造权重分布时约束信息可访问性。
+
+## 多头注意力与完整 Transformer 之间的关系
+
+真实 Transformer 往往使用 h 个头，每个头拥有自己的投影。各头产生输出之后沿特征维连接，再经过输出投影。并行的头提供不同投影子空间，允许模型学习多种交互模式。
+
+除了 Attention，还需要残差连接、归一化、前馈网络、位置表示，以及训练目标。只有把这些模块按计算图连接起来，才构成完整的 Transformer Block。
+
+## 计算复杂度与长上下文问题
+
+在密集 Self-Attention 中，QKᵀ 包含 N² 对位置交互。当头维度 d_k 固定时，分数矩阵的计算与存储规模通常随 N² 增长。这解释了为什么长上下文推理会关注内存访问、稀疏连接与 KV Cache。
+
+对模型性能优化，应区分三个问题：Attention 内核怎样减少数据搬运、Decode 怎样复用历史 K/V、推理服务怎样调度多个会话。它们对应不同的瓶颈。
+
+## 进一步阅读
+
+- [为什么要除以 √dₖ](/docs/transformer/why-divide-sqrt-dk)
+- [Attention Is All You Need 论文研读](/papers/attention-is-all-you-need)
+- [FlashAttention 论文研读](/papers/flashattention)
+- [KV Cache 的显存与延迟](/docs/transformer/kv-cache)
