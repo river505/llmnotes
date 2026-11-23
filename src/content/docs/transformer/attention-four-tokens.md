@@ -110,6 +110,50 @@ $$
 
 对模型性能优化，应区分三个问题：Attention 内核怎样减少数据搬运、Decode 怎样复用历史 K/V、推理服务怎样调度多个会话。它们对应不同的瓶颈。
 
+## 将四个 Token 的计算写成可运行程序
+
+只理解矩阵尺寸还不足以确认自己掌握了 Attention。下面使用 NumPy 显式计算 Q、K、V、Score、Softmax 和最终输出。固定输入后，这段代码应该能够复现前文的概率分布与加权结果。
+
+~~~python
+import numpy as np
+
+Q = np.array([[1,0],[0,1],[1,1],[1,-1]], dtype=float)
+K = Q.copy()
+V = np.array([[1,0],[0,1],[1,1],[2,0]], dtype=float)
+
+scores = Q @ K.T / np.sqrt(Q.shape[-1])
+scores -= scores.max(axis=-1, keepdims=True)
+weights = np.exp(scores)
+weights /= weights.sum(axis=-1, keepdims=True)
+output = weights @ V
+
+print("scores:", scores.shape)      # (4, 4)
+print("weights:", weights.shape)    # (4, 4)
+print("output:", output.shape)      # (4, 2)
+print("third token weights:", weights[2].round(3))
+print("third token output:", output[2].round(3))
+~~~
+
+减去每行最大分数是 Softmax 的常见数值稳定化方法。它不改变准确数学意义下的归一化结果，却可避免直接计算指数时的数值溢出。
+
+## 在相同代码中加入因果掩码
+
+假设我们正在实现只能读取过去信息的 Decoder，把上面的分数矩阵在 Softmax 之前应用上三角 Mask：
+
+~~~python
+causal = np.triu(np.ones((4, 4), dtype=bool), k=1)
+masked_scores = (Q @ K.T) / np.sqrt(Q.shape[-1])
+masked_scores[causal] = -np.inf
+
+stable = masked_scores - masked_scores.max(axis=-1, keepdims=True)
+prob = np.exp(stable)
+prob /= prob.sum(axis=-1, keepdims=True)
+print(prob.round(3))
+~~~
+
+注意第 i 行只能在前 i+1 个 Key 上形成非零权重。由此可以直接检查“第 1 个 Token 看不到第 4 个 Token”是否被实现，而不是仅相信模型框架中的 is_causal 参数。
+
+
 ## 进一步阅读
 
 - [为什么要除以 √dₖ](/docs/transformer/why-divide-sqrt-dk)

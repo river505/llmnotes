@@ -94,3 +94,28 @@ $$
 
 - [四个 Token 推导 Self-Attention](/docs/transformer/attention-four-tokens)
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+## 用 NumPy 看见维度增长的影响
+
+可以模拟不同 dₖ 下的两个标准正态随机向量，测量原始点积与缩放点积的标准差。根据前文假设，原始点积的标准差应近似正比于 √dₖ，而缩放后约保持常数。
+
+~~~python
+import numpy as np
+
+rng = np.random.default_rng(7)
+for d in [16, 64, 256, 1024]:
+    q = rng.standard_normal((4000, d))
+    k = rng.standard_normal((4000, d))
+    score = np.sum(q*k, axis=1)
+    print(d, "raw std:", score.std().round(2),
+          "scaled std:", (score/np.sqrt(d)).std().round(2))
+~~~
+
+结果会有有限样本波动，但整体趋势应清晰。接下来可以固定一组向量，把这些分数送入 Softmax，绘制输出熵随尺度变化的曲线，观察权重变得更尖锐的过程。
+
+## 缩放因子与 Temperature 的联系
+
+如果把 Softmax 写成 softmax(z/T)，那么将 z 除以 √dₖ 等价于对这组分数设置一个与头维度相关的温度尺度。T 大时分布更平坦；T 小时分布更尖锐。
+
+但这里的缩放属于 Attention 模块内部的数值设计，并不是语言模型生成阶段 Temperature 采样参数。前者影响隐藏状态如何聚合，后者作用于输出词表 Logits；两者出现在不同的计算位置。
+
+
