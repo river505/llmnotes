@@ -65,6 +65,43 @@ QLoRA 利用量化基础权重降低训练显存，并通过低秩适配器学�
 
 除了最终任务指标，至少还应记录训练峰值显存、总训练时间、检查点大小和推理部署形式。一个配置即使效果接近，如果显存和版本管理成本显著更低，也有明确的工程价值。
 
+## 参数量的手算：为什么秩 8 已经节省很多
+
+考虑一个 4096×4096 的线性投影矩阵 W。全量更新需要训练 16,777,216 个权重；若使用秩 r=8 的 LoRA，则 A 与 B 的参数总数为：
+
+$$
+N_{\mathrm{LoRA}}=r(d_{\mathrm{in}}+d_{\mathrm{out}})
+=8(4096+4096)=65\,536.
+$$
+
+普通写法：trainable_params = 8 * (4096 + 4096) = 65536。
+
+这个线性层的可训练增量参数仅为全量权重的约 0.39%。如果模型中的某些模块不使用 LoRA，整模型的可训练比例还会不同。
+
+显存收益不仅来自梯度本身，还来自优化器状态。但冻结的基础权重依然需要在推理与训练时被读取，所以不能把可训练参数比例直接当成总显存降低比例。
+
+## 用代码检查合并前后的结果
+
+LoRA 在线执行时计算 Wx+(α/r)BAx；权重合并后使用 (W+(α/r)BA)x。忽略浮点舍入差异，两条路径应保持一致：
+
+~~~python
+import numpy as np
+
+rng = np.random.default_rng(0)
+W = rng.normal(size=(6, 8))
+A = rng.normal(size=(2, 8))
+B = rng.normal(size=(6, 2))
+x = rng.normal(size=(8,))
+scale = 4 / 2
+
+online = W @ x + scale * B @ (A @ x)
+merged = (W + scale * B @ A) @ x
+print(np.allclose(online, merged))
+~~~
+
+这个测试很适合作为部署检查。真实模型还需确认转置布局、量化精度和适配器加载顺序，否则公式上等价的两条路径也可能因实现约定不同而产生偏差。
+
+
 ## 原始资料
 
 - [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685), Hu et al., 2021。

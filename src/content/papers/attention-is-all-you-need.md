@@ -75,6 +75,39 @@ $$
 
 复现时应区分架构本身与训练配方：学习率 warmup、label smoothing、数据处理及解码策略都可能显著影响结果。单独实现注意力公式并不能复现完整原始论文结果。
 
+## 把一个 Transformer Block 拆成可验证的子模块
+
+假设输入序列长度为 L，隐藏维度为 D。Attention 子层先投影 Q/K/V，再将多个 Head 的输出连接并映射回 D 维。前馈子层则对每个位置独立应用两次线性变换和非线性激活。
+
+典型的 FFN 可以抽象为：
+
+$$
+\operatorname{FFN}(x)=W_2\sigma(W_1x+b_1)+b_2.
+$$
+
+普通写法：ffn(x) = linear_2(activation(linear_1(x)))。
+
+注意力在 Token 之间混合信息，FFN 主要在每个位置的特征维度上提供非线性变换。两者承担不同职责，因此仅实现 QKᵀ 和 Softmax 并不等于实现完整 Transformer。
+
+原论文采用 Post-Norm 风格的 Add & Norm，而许多现代 Decoder-only 架构使用 Pre-Norm、RMSNorm 或门控 FFN。阅读技术演进时应明确对应的归一化顺序，而不把所有变种混为同一个 Block。
+
+## 因果掩码为什么影响模型训练目标
+
+Decoder 的 Masked Self-Attention 只允许位置 t 使用不晚于 t 的上下文。如果去掉 Mask 并仍执行下一个 Token 预测，模型可能在训练时直接看到目标位置之后的信息，引入明显的信息泄漏。
+
+从矩阵角度看，长度为四的序列对应一个下三角可见性矩阵：
+
+~~~text
+       K0 K1 K2 K3
+Q0      1  0  0  0
+Q1      1  1  0  0
+Q2      1  1  1  0
+Q3      1  1  1  1
+~~~
+
+这张矩阵不仅影响生成方式，也是训练目标能否成立的前提。与之不同，Encoder 的自注意力在常见设置下允许双向读取。Encoder–Decoder Cross-Attention 再让目标侧表示读取源侧编码结果。
+
+
 ## 继续研究
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762), Vaswani et al., 2017。

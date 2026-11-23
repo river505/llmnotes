@@ -59,6 +59,33 @@ $$
 
 对于代码修改类任务，应同时报告最终测试通过率和引入新问题的情况，不能只记录操作是否发生。
 
+## 一条可审计的 ReAct 任务轨迹
+
+考虑用户要求“根据仓库的测试失败日志定位最小修复”。Agent 不应一开始就生成通用补丁，而要逐步获得具体观察：
+
+~~~text
+Task: 修复一个明确的单元测试失败
+Action 1: read_ci_log(job_id)
+Observation: AssertionError in tests/test_parser.py:42
+Action 2: read_file(path="src/parser.py")
+Observation: 当前函数把空输入解析为 None
+Action 3: propose_patch(...)
+Observation: 生成受控文件差异
+Action 4: run_tests("tests/test_parser.py")
+Observation: 相关测试通过，退出码为 0
+Verify: 检查修改文件范围与新测试结果
+Final: 提交差异和验证证据
+~~~
+
+这个轨迹中每个 Observation 都依赖工具的实际输出。模型提出“应该运行测试”是一个建议，只有执行器返回成功状态才算产生了验证证据。
+
+## 怎样比较 ReAct 与固定工作流
+
+设计一批具备不同失败分支的公开任务，给 ReAct 和固定流程提供相同工具、同样预算与同样的完成标准。记录端到端成功率、工具调用数、额外无效调用、平均延迟和人工干预次数。
+
+固定工作流通常在任务路径稳定时更简单；动态执行则在需要根据外部观察调整路径时有优势。两者并非互斥：将验证、权限与部署步骤固化，把检索和诊断等局部环节交给模型选择，可能更适合生产场景。
+
+
 ## 原论文与进一步阅读
 
 - [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629), Yao et al., 2022。
