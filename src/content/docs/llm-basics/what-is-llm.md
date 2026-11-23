@@ -6,7 +6,7 @@ section: "大模型基础"
 tags: ["LLM","基础模型","面试"]
 difficulty: "入门"
 order: 1
-updated: "2026-07-16"
+updated: "2026-11-23"
 created: "2026-05-29"
 draft: false
 featured: true
@@ -52,6 +52,47 @@ LLM：根据上下文生成结构化待办列表。
 ```
 
 这个例子里，LLM 负责语言理解和生成，外层系统负责约束、集成和验证。把两者分开看，很多“模型不稳定”的问题其实会变成可定位的工程问题。
+
+## 训练和生成的时间维度为什么不同
+
+自回归语言模型按概率链式法则把整段文本分解为条件概率：
+
+$$
+p_\theta(x_{1:T})=\prod_{t=1}^{T}p_\theta(x_t\mid x_{<t}).
+$$
+
+普通写法：sequence_prob = product(next_token_prob(token_t | previous_tokens))。
+
+训练时，完整文本已经存在。通过因果掩码，模型可以在一次前向计算中同时估计多个位置的目标 Token 概率；生成时，未来 Token 尚不存在，必须先选择当前位置的输出，再接着计算下一位置。这里的差异解释了为何 Transformer 可以高度并行训练，自回归推理却经常受到逐 Token 执行的约束。
+
+考虑上下文“今天的天气很”，模型并不是先在内部写出整句回复，再依次输出汉字。它计算下一个 Token 的词表 Logits，经 Softmax 和采样策略选择一个 Token，再将新 Token 加入序列。模型可能有成千上万个候选 Token，最后显示的字符边界不一定等于 Token 边界。
+
+## 一个容易混淆的工程流程
+
+从用户输入到最终可读的回复，至少经过 Tokenizer、Embedding、Transformer Block、词表投影和解码器。输入与输出可以按下图理解：
+
+~~~text
+文本输入
+   ↓ Tokenizer / Chat Template
+Token IDs [B, L]
+   ↓ Embedding
+Hidden states [B, L, D]
+   ↓ Transformer blocks
+Last-position hidden state [B, D]
+   ↓ Output projection + Softmax
+Next-token distribution [B, V]
+   ↓ Sampler
+一个新 Token → 追加到历史 → 下一轮
+~~~
+
+B 是批次大小，L 是上下文长度，D 是隐藏维度，V 是词表大小。需要注意的是，这是一条简化的推理链路；工程实现可能融合 Softmax 与采样、复用 KV Cache，并使用量化和批处理减少开销。
+
+## 如何观察模型真正的行为
+
+对固定提示词，分别使用 Greedy、Temperature=0.7 与 Top-p=0.9 生成多个样本。记录 Token 序列、Logits 或对数概率、生成长度和运行延迟。这样的实验能够将“模型预测哪些 Token”和“采样器最终选了哪个 Token”分开。
+
+如果输出变化很大，首先排查采样与随机种子；如果特定事实持续错误，则应检查模型知识、上下文和检索证据。通过实验拆开模型分布、采样策略和外部信息来源，比将所有输出问题归结为“模型不理解”更有解释力。
+
 
 ## 常见误区
 

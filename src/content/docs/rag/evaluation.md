@@ -84,6 +84,41 @@ MRR 更强调第一个正确结果；nDCG 可以体现多个相关证据及其�
 
 对于需要严格权限控制的系统，还应验证检索结果的访问权限过滤。未授权内容即使只进入模型上下文而没有显示给用户，也属于需要排查的错误。
 
+## 一个小型排序评测手算
+
+假设有两个查询，且每个查询都只有一条标注的最关键证据。查询 A 的正确证据排第 2 位，查询 B 排第 4 位。则这两条查询的 Reciprocal Rank 分别为 1/2 和 1/4，平均 MRR 为：
+
+$$
+\mathrm{MRR}=\frac{1/2+1/4}{2}=0.375.
+$$
+
+普通写法：MRR = (1/2 + 1/4) / 2 = 0.375。
+
+如果计算 Recall@3，则查询 A 命中、查询 B 未命中，宏平均 Recall@3 为 0.5。两者给出不同信息：MRR 能区分正确证据出现在第 2 位和第 4 位，Recall@3 只判断它是否进入前三位。
+
+## 怎样保存可复核的逐查询报告
+
+推荐为每个查询保留 query_id、ground_truth_document_ids、retrieved_document_ids、rerank_score、模型生成答案、引用的 Document ID 和最终判定。这样某个平均指标变化时，可以直接定位改变最大的查询。
+
+~~~text
+query_id: q_014
+gold_docs: [doc_03]
+retrieved_top5: [doc_07, doc_03, doc_11, doc_02, doc_09]
+recall_at_3: 1.0
+reciprocal_rank: 0.5
+answer_correct: true
+citation_supported: true
+~~~
+
+如果评测表只保留总体准确率，就无法回答改进是来自更多证据被召回，还是模型在相同证据下生成得更好。
+
+## 自动评判也需要校准
+
+用另一个 LLM 判断答案是否忠实于证据，可以减少部分人工成本，但它本身也会误判。建议选一批人工认真标注的样本，先评估自动评判器的准确率与一致性，再将其应用到更大评测集。
+
+此外，检索器、生成器和评判器若共享同一数据来源或模型家族，可能存在相关偏差。最终报告应说明哪些结果来自客观匹配，哪些依赖模型评判，并保留可供人工核对的样本。
+
+
 ## 推荐文献
 
 - [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)。

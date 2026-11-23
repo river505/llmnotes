@@ -6,7 +6,7 @@ section: "Agent"
 tags: ["Agent","ReAct","Tool Calling"]
 difficulty: "入门"
 order: 4
-updated: "2026-07-16"
+updated: "2026-11-23"
 created: "2026-05-29"
 draft: false
 featured: false
@@ -65,6 +65,39 @@ while not done:
 ```
 
 这个循环的难点不在代码本身，而在工具边界、状态管理和失败处理。
+
+## 一条实际工具轨迹长什么样
+
+例如用户要求“查找一个公开软件项目最新的发布说明，并概括其中的破坏性变更”。固定模型回答可能直接给出记忆中的版本；ReAct 式执行则先调用查询工具，得到版本与文档，再根据返回内容进行摘要。
+
+~~~text
+TASK: 读取指定开源库的最新版本变更
+STATE: current_release_unknown
+ACTION: search_releases(repository)
+OBSERVATION: release vX.Y, published_at, release_notes_url
+ACTION: fetch_release_notes(release_notes_url)
+OBSERVATION: versioned changelog text
+ACTION: extract_breaking_changes(observation)
+VERIFY: extracted claims appear in changelog
+DONE: version + changes + source links
+~~~
+
+这条轨迹的重点不是展示内部推理，而是明确每一步的可执行动作和证据来源。工具调用的记录应有结构化参数和结果，便于失败时复盘。
+
+## 决策循环中的三种失败
+
+第一种是**选择错误的工具**：模型把版本检索任务交给普通网页摘要工具，返回未经校验的内容。第二种是**错误解释 Observation**：返回的是旧版本 Release Notes，模型却把它当作最新版本。第三种是**错误地宣布完成**：系统尚未完成证据检查，模型已经输出最终答案。
+
+这三类错误不适合只靠调整提示词解决。工具选择可加候选约束，观察解释可用版本比较或字段校验，完成状态应由外部验证器确定。
+
+一个合理的终止协议包含 DONE、FAILED、PARTIAL 和 WAITING_APPROVAL。即使任务只读，也应给出最大调用次数、网络超时和错误恢复策略。对修改文件等写入任务，还需要检查目标状态是否与模型读取时保持一致。
+
+## ReAct 与工作流的实验比较
+
+固定 30 个左右的公开测试任务，统一工具权限、调用上限和模型配置。分别评估单轮回答、固定步骤工作流和允许动态选择工具的 ReAct 方案，报告任务成功率、平均调用次数、p95 延迟和需要人工修复的比例。
+
+测试集大小可以按项目成本调整，但必须保存逐任务操作日志。否则仅凭几个看起来顺畅的演示视频，无法说明动态执行相比固定流程实际增加了什么能力。
+
 
 ## 常见误区
 

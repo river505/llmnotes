@@ -79,6 +79,33 @@ PagedAttention 一类方案把 KV Cache 管理成固定大小的逻辑块及其�
 
 实验中固定模型权重、Tokenizer、精度和解码参数，才能把性能差异归因到缓存策略。
 
+## 从两个生成步骤检查缓存正确性
+
+假设 Prefill 输入 Token 为 [A,B,C]，生成模型第一次输出 D。初始 Prefill 已计算位置 0、1、2 的 K/V；下一次 Decode 只需要计算 D 在位置 3 的投影并追加缓存，而不应重新投影 A、B、C。
+
+随后生成 E 时，Query 对历史 A、B、C、D 对应的 Key 进行匹配，输出的注意力权重仍覆盖整个可见上下文。KV Cache 复用的是已计算的历史状态，而不是降低当前 Query 需要读取的历史长度。
+
+~~~text
+Prefill:  A B C       → cache [K_A,K_B,K_C], [V_A,V_B,V_C]
+Decode1: D (pos=3)   → read ABC, append K_D / V_D
+Decode2: E (pos=4)   → read ABCD, append K_E / V_E
+~~~
+
+这里的 D、E 是新增 Token 的示意字母。真实张量还含 Batch、Layer、Head 和维度信息，且不同框架对缓存排列可能不同。
+
+## 为什么缓存不能无限增长
+
+对于固定模型，缓存字节数与当前上下文长度近似线性相关。当请求越来越长、并发数越来越高时，即使模型权重不变，可容纳的会话数也会下降。
+
+服务系统通常需要在最大上下文长度、并发数和超时策略之间做容量规划。会话结束后，缓存块必须及时回收；Prefix Cache 等共享机制需要确保共享条件正确，避免让不应共享的上下文状态混入其他请求。
+
+## 用测试证明缓存与全量推理一致
+
+对一个短 Token 序列，分别采用每轮重新计算完整上下文和启用 KV Cache 的增量推理。保持相同权重、精度、位置编码、Causal Mask 和确定性采样，比较各步 Logits 的最大绝对差和最终生成序列。
+
+如果出现明显偏差，优先排查：新增 Token 的位置索引、Cache 拼接维度、Batch 内序列长度管理，以及 RoPE 在当前轮次应用的位置。输出错误未必意味着缓存的数据本身损坏，也可能来自 Mask 或索引错位。
+
+
 ## 原始资料
 
 - [Efficiently Scaling Transformer Inference: Multi-Query Attention](https://arxiv.org/abs/1911.02150)。
