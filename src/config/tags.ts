@@ -20,5 +20,8 @@ const tagSlugMap: Record<string, string> = {
 };
 
 export function tagSlug(tag: string) {
-  return tagSlugMap[tag] ?? tag.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (tagSlugMap[tag]) return tagSlugMap[tag];
+  const ascii=tag.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  if (!/[\u0080-\uffff]/.test(tag) && ascii) return ascii;
+  return 'tag-' + Array.from(tag).map(c=>c.codePointAt(0)!.toString(16)).join('-');
 }
