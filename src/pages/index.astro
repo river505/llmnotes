@@ -1,30 +1,69 @@
 ---
 import { getCollection } from 'astro:content';
 import PageLayout from '../components/layout/PageLayout.astro';
-import { categories, roadmapCards } from '../config/site';
-const all = await Promise.all(['docs','projects','papers','roadmaps','interview'].map((name) => getCollection(name)));
-const entries = all.flat().filter((entry) => !entry.data.draft).sort((a,b) => b.data.updated.valueOf() - a.data.updated.valueOf());
-const latest = entries.slice(0, 6);
-const topics = [
-  ['用 4 个 Token 看懂 Attention','/docs/transformer/attention-four-tokens','把 Q/K/V、softmax 和加权求和压到一个小例子里。'],
-  ['PPO 与 RLHF','/docs/rl/ppo','理解 PPO clipped objective 如何服务于大模型对齐。'],
-  ['RAG 从入门到工程化','/docs/rag/what-is-rag','从检索、切分、重排到评测和失败排查。'],
-  ['Code Agent 如何变成软件工程智能体','/projects/code-agent','把工具调用、规划、测试和代码修改串成项目。'],
-];
+import { categories } from '../config/site';
+const group = await Promise.all(['docs','papers','projects','roadmaps','interview'].map((name)=>getCollection(name)));
+const latest = group.flat().filter(x=>!x.data.draft).sort((a,b)=>b.data.updated.valueOf()-a.data.updated.valueOf()).slice(0,6);
+const foundations=[
+{n:'01',title:'Token 与表示',desc:'从离散符号到向量空间：词表、分词与 Embedding 决定模型实际接收到的输入。',href:'/docs/llm-basics/tokenizer',kind:'REPRESENTATION'},
+{n:'02',title:'Attention 的计算图',desc:'沿着 Q、K、V、矩阵乘法、缩放和 Softmax，完整走一遍信息聚合过程。',href:'/docs/transformer/attention-four-tokens',kind:'COMPUTATION'},
+{n:'03',title:'预训练与偏好对齐',desc:'区分预训练、监督微调和偏好学习，理解训练目标如何塑造模型行为。',href:'/docs/llm-basics/training-alignment',kind:'OPTIMIZATION'}];
+const papers=[
+{title:'Attention Is All You Need',year:'2017',topic:'ARCHITECTURE',href:'/papers/attention-is-all-you-need',desc:'从序列建模的并行计算约束出发，重建 Transformer 架构。'},
+{title:'FlashAttention',year:'2022',topic:'SYSTEMS',href:'/papers/flashattention',desc:'以 SRAM 与 HBM 之间的数据搬运解释精确注意力的速度提升。'},
+{title:'LoRA',year:'2021',topic:'FINE-TUNING',href:'/papers/lora',desc:'低秩参数增量如何降低大模型任务适配的训练成本。'},
+{title:'Direct Preference Optimization',year:'2023',topic:'ALIGNMENT',href:'/papers/dpo',desc:'通过偏好对直接优化策略，绕过显式奖励模型的强化学习循环。'}];
+const routes=[
+{id:'A',title:'理解模型',meta:'RESEARCH & ALGORITHMS',desc:'从 Attention 到 KV Cache，再以原始论文检验设计思路与实验依据。',href:'/roadmaps/llm-beginner'},
+{id:'B',title:'构建系统',meta:'RETRIEVAL & AGENTS',desc:'沿数据处理、检索、工具执行、离线评测和部署形成完整工程路径。',href:'/roadmaps/llm-engineering'},
+{id:'C',title:'组织研究证据',meta:'EXPERIMENTAL METHOD',desc:'以研究假设、对照实验、独立样本和误差分析建立可复核结论。',href:'/roadmaps/research-methods'}];
 ---
-<PageLayout>
-  <section class="hero">
-    <div>
-      <p class="eyebrow">LLM Notes.cn</p>
-      <h1>大模型学习与工程实践指南</h1>
-      <p class="lead">系统梳理 LLM、RAG、Agent、多模态、强化学习、AI 面试、项目实战与论文精读，面向 AI 研究生、算法工程师、开发者和面试准备者。</p>
-      <div class="actions"><a class="primary-button" href="/docs">开始学习</a><a class="secondary-button" href="/roadmaps">查看学习路线</a></div>
-      <button class="search-hero search-trigger" type="button" aria-label="搜索"><span>⌕</span><span>搜索 Transformer / RAG / Agent / PPO / 多模态</span></button>
-    </div>
-    <aside class="hero-panel"><h2>推荐阅读顺序</h2><div class="route-list"><a href="/docs/transformer/attention-four-tokens"><span>01</span><div><strong>Transformer</strong><p>先建立模型结构直觉。</p></div></a><a href="/docs/rag/what-is-rag"><span>02</span><div><strong>RAG 与 Agent</strong><p>进入工程落地链路。</p></div></a><a href="/projects/code-agent"><span>03</span><div><strong>项目实战</strong><p>沉淀可复述项目。</p></div></a></div></aside>
-  </section>
-  <section class="section"><div class="section-head"><div><h2>核心入口</h2><p>按专题组织，不做碎片化博客。</p></div><a class="secondary-button" href="/docs">全部文档</a></div><div class="card-grid">{categories.map((item) => <a class="card" href={item.href}><h3>{item.title}</h3><p>{item.description}</p></a>)}</div></section>
-  <section class="section"><div class="section-head"><div><h2>学习路线</h2><p>适合长期推进，也适合面试前集中复盘。</p></div></div><div class="card-grid">{roadmapCards.map((item) => <a class="card" href={item.href}><h3>{item.title}</h3><p>{item.description}</p></a>)}</div></section>
-  <section class="section"><div class="section-head"><div><h2>最新更新</h2><p>最近更新的文档、项目、论文和路线。</p></div></div><div class="article-list">{latest.map((entry) => <a class="article-row" href={(entry.collection === 'docs' ? '/docs/' : '/' + entry.collection + '/') + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="meta"><span>{entry.data.section}</span><span>{entry.data.updated.toISOString().slice(0,10)}</span></div></a>)}</div></section>
-  <section class="section"><div class="section-head"><div><h2>推荐专题</h2><p>适合作为本站第一批王牌内容扩写。</p></div></div><div class="card-grid">{topics.map(([title, href, desc]) => <a class="card" href={href}><h3>{title}</h3><p>{desc}</p></a>)}</div></section>
+<PageLayout title="LLMNotes · 从模型原理到工程验证" description="机器学习与大模型技术笔记。围绕机制、实现和实验评估，系统梳理 Transformer、RAG、Agent、模型对齐、推理系统和经典论文。">
+  <div class="home-editorial">
+    <section class="home-hero">
+      <div class="hero-copy">
+        <p class="overline">THE MODEL · THE METHOD · THE EVIDENCE</p>
+        <h1>把模型的工作机制，<br/><em>讲到能够推导与验证。</em></h1>
+        <p class="hero-deck">从一个张量如何流过网络，到一次实验为什么可信，再到模型怎样成为可运行的系统。这里不堆叠术语，而是把问题、方法、实现和证据连成完整的技术路径。</p>
+        <div class="hero-cta"><a class="primary-button" href="/docs">进入技术文档 ↗</a><a class="text-link" href="/papers">浏览论文研读 ↗</a></div>
+        <p class="hero-caption">NOTES ON MODELS, SYSTEMS AND RESEARCH</p>
+      </div>
+      <div class="hero-visual" aria-label="输入、表征、Attention 和推理的概念计算图">
+        <div class="diagram-top"><span>MODEL PIPELINE / 001</span><span>COMPUTATION GRAPH</span></div>
+        <div class="diagram-steps"><div><small>01 / INPUT</small><strong>Tokens</strong><span>x₁, x₂, ...</span></div><b>→</b><div><small>02 / ENCODE</small><strong>Embedding</strong><span>X ∈ ℝⁿˣᵈ</span></div><b>→</b><div><small>03 / MIX</small><strong>Attention</strong><span>Q · Kᵀ</span></div></div>
+        <div class="diagram-body">
+          <div class="matrix-info"><span>ATTENTION WEIGHTS</span><span>SOFTMAX / N × N</span></div>
+          <div class="attention-matrix">{Array.from({length:64},(_,i)=><span style={'--strength:'+(((i*17+Math.floor(i/8)*23+i%8*5)%11)/10)+';--phase:'+(i%13)} />)}</div>
+          <div class="diagram-caption">Representation → Context → Output</div>
+        </div>
+        <div class="diagram-bottom"><span>DATA FLOW / OBSERVABLE</span><span>FIG. 01</span></div>
+      </div>
+    </section>
+
+    <section class="editorial-section">
+      <div class="section-title-row"><div><span class="overline">01 / START WITH COMPUTATION</span><h2>从计算过程开始</h2><p>最基础的概念，应该能落到具体张量、公式和计算步骤上。</p></div><a href="/docs" class="section-all">技术文档 ↗</a></div>
+      <div class="foundation-grid">{foundations.map(x=><a class="foundation-card" href={x.href}><div class="foundation-head"><span>{x.n}</span><span>{x.kind}</span></div><h3>{x.title}</h3><p>{x.desc}</p><div class="card-last">阅读这一节 <span>↗</span></div></a>)}</div>
+    </section>
+
+    <section class="editorial-section ruled">
+      <div class="section-title-row"><div><span class="overline">02 / KNOWLEDGE MAP</span><h2>六条核心技术主线</h2><p>按照问题的结构组织知识，而不是按照流行名词组织页面。</p></div></div>
+      <div class="topic-grid">{categories.map((x,i)=><a class="topic-card" href={x.href}><span class="topic-index">{String(i+1).padStart(2,'0')}</span><div><h3>{x.title}</h3><p>{x.description}</p></div><span class="topic-arrow">↗</span></a>)}</div>
+    </section>
+
+    <section class="editorial-section ruled">
+      <div class="section-title-row"><div><span class="overline">03 / THE ORIGINAL WORK</span><h2>从论文重建方法</h2><p>看作者要解决什么，关键设计如何工作，以及证据如何支持结论。</p></div><a href="/papers" class="section-all">论文索引 ↗</a></div>
+      <div class="paper-grid">{papers.map(x=><a class="paper-card" href={x.href}><div class="paper-top"><span>{x.topic}</span><span>↗</span></div><h3>{x.title}</h3><span class="paper-year">{x.year} / ORIGINAL PAPER</span><p>{x.desc}</p></a>)}</div>
+    </section>
+
+    <section class="editorial-section ruled">
+      <div class="section-title-row"><div><span class="overline">04 / READING PATHS</span><h2>选择一条技术路径</h2><p>学习、开发和研究对应不同的目标，但都需要明确的机制与证据。</p></div></div>
+      <div class="path-stack">{routes.map(x=><a class="path-row" href={x.href}><span class="path-index">{x.id}</span><div class="path-name"><span>{x.meta}</span><h3>{x.title}</h3></div><p>{x.desc}</p><span class="path-arrow">↗</span></a>)}</div>
+    </section>
+
+    <section class="editorial-section ruled">
+      <div class="section-title-row"><div><span class="overline">05 / RECENTLY REVISED</span><h2>近期更新</h2><p>正在持续整理的技术笔记、论文研读与工程记录。</p></div><a href="/docs" class="section-all">全部文档 ↗</a></div>
+      <div class="latest-list">{latest.map(x=><a class="latest-row" href={'/'+x.collection+'/'+x.id}><span class="latest-date">{x.data.updated.toISOString().slice(5,10)}</span><div><h3>{x.data.title}</h3><p>{x.data.description}</p></div><span class="latest-section">{x.data.section}</span><span class="latest-arrow">↗</span></a>)}</div>
+    </section>
+    <div class="home-endnote"><span>LLMNOTES / RESEARCH & ENGINEERING</span><span>Read deeply. Build carefully.</span></div>
+  </div>
 </PageLayout>
