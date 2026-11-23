@@ -2,11 +2,22 @@
 import { getCollection } from 'astro:content';
 import PageLayout from '../../components/layout/PageLayout.astro';
 import { categories } from '../../config/site';
-const docs = (await getCollection('docs')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.category.localeCompare(b.data.category) || a.data.order - b.data.order);
+const docs=(await getCollection('docs')).filter(e=>!e.data.draft).sort((a,b)=>a.data.category.localeCompare(b.data.category)||a.data.order-b.data.order);
+const chapters=[
+  {slug:'llm-basics',label:'基础与训练',purpose:'从输入表示和预测目标进入预训练、微调与对齐，建立模型学习机制的整体框架。'},
+  {slug:'transformer',label:'Transformer 与注意力',purpose:'围绕 Q/K/V、张量维度、缓存结构和访存代价，理解现代模型的计算路径。'},
+  {slug:'rag',label:'检索增强生成',purpose:'把文档处理、检索排序和答案生成拆成可单独评估的子系统。'},
+  {slug:'agent',label:'Agent 与工具调用',purpose:'以可执行状态机理解模型、工具、观察与退出条件之间的关系。'},
+  {slug:'multimodal',label:'多模态',purpose:'关注视觉与文本如何表示、如何对齐，以及模态融合的训练目标。'},
+  {slug:'rl',label:'强化学习',purpose:'从 MDP 到策略梯度与 PPO，理解模型优化的目标和估计。'},
+  {slug:'engineering',label:'推理工程',purpose:'关注 Prefill、Decode、KV Cache、吞吐量和延迟等部署约束。'},
+  {slug:'recsys',label:'推荐系统',purpose:'从候选生成、排序目标和评估指标观察工业级机器学习系统。'}
+];
 ---
-<PageLayout title="LLM Notes 文档 | LLM Notes 大模型学习与工程实践指南" description="按知识体系组织的大模型学习文档，覆盖 LLM、RAG、Agent、多模态、强化学习、推荐系统和 AI 工程部署。">
-  <section class="section"><p class="eyebrow">Docs</p><h1>LLM Notes 文档</h1><p class="lead">按知识体系组织的大模型学习文档。你可以像刷 JavaGuide / 代码随想录一样，沿着清晰目录长期推进。</p></section>
-  <section class="section"><div class="section-head"><div><h2>快速入口</h2><p>先选主题，再按章节顺序阅读。</p></div></div><div class="card-grid">{categories.map((item) => <a class="card" href={item.href}><h3>{item.title}</h3><p>{item.description}</p></a>)}</div></section>
-  <section class="section"><h2>推荐阅读路径</h2><div class="route-list"><a href="/docs/transformer/attention-four-tokens"><span>1</span><div><strong>先学 Transformer</strong><p>从 Attention 到 GPT，建立模型结构直觉。</p></div></a><a href="/docs/llm-basics/what-is-llm"><span>2</span><div><strong>再学 LLM 训练与微调</strong><p>理解预训练、SFT、RLHF、DPO 与推理参数。</p></div></a><a href="/docs/rag/what-is-rag"><span>3</span><div><strong>然后学 RAG 与 Agent</strong><p>把模型能力接入知识库、工具和工作流。</p></div></a><a href="/projects/code-agent"><span>4</span><div><strong>最后做项目和面试准备</strong><p>用项目讲清业务问题、技术路线和优化空间。</p></div></a></div></section>
-  <section class="section"><h2>全部文档</h2><div class="article-list">{docs.map((entry) => <a class="article-row" href={'/docs/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="meta"><span>{entry.data.section}</span><span>{entry.data.difficulty}</span></div></a>)}</div></section>
+<PageLayout title="技术文档 | LLMNotes" description="按计算过程、训练机制、检索系统、Agent 和推理工程组织的大模型技术文档。">
+  <section class="page-intro"><p class="overline">DOCUMENTATION / FIELD GUIDE</p><h1>技术文档</h1><p class="lead">从问题结构出发，把大模型技术拆成可以逐项理解和验证的计算模块。阅读时建议同时关注张量形状、优化目标、资源开销和实验评估，不必拘泥于固定的名词学习顺序。</p><p class="lead">每个主题由基础机制延伸到系统实现；对于已有工程经验的读者，也可以直接进入缓存、检索评测、工具执行与推理服务章节。</p></section>
+  <section class="editorial-section"><div class="section-title-row"><div><span class="overline">01 / CORE MODULES</span><h2>按技术问题进入</h2><p>选择当前最需要解决的约束，再沿对应章节展开。</p></div></div><div class="topic-grid">{categories.map((item,i)=><a class="topic-card" href={item.href}><span class="topic-index">{String(i+1).padStart(2,'0')}</span><div><h3>{item.title}</h3><p>{item.description}</p></div><span class="topic-arrow">↗</span></a>)}</div></section>
+  <section class="editorial-section ruled"><div class="section-title-row"><div><span class="overline">02 / READING INDEX</span><h2>章节索引</h2><p>可沿主题顺序阅读，也可按具体问题定位。</p></div></div>
+    {chapters.map((group,i)=><div class="chapter-block"><div class="chapter-intro"><span class="overline">{String(i+1).padStart(2,'0')} / {group.slug.toUpperCase()}</span><h3>{group.label}</h3><p>{group.purpose}</p></div><div class="chapter-list">{docs.filter(x=>x.data.category===group.slug).map(x=><a href={'/docs/'+x.id} class="article-row"><strong>{x.data.title}</strong><p>{x.data.description}</p><div class="meta"><span>{x.data.difficulty}</span><span>{x.data.readingTime}</span></div></a>)}</div></div>)}
+  </section>
 </PageLayout>

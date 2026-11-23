@@ -1,9 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import PageLayout from '../../components/layout/PageLayout.astro';
-const entries = (await getCollection('roadmaps')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+const entries=(await getCollection('roadmaps')).filter(x=>!x.data.draft).sort((a,b)=>a.data.order-b.data.order);
 ---
-<PageLayout title="学习路线 | LLM Notes" description="从零基础、算法工程、大模型应用、RAG、Agent、多模态、强化学习到 AI 面试的系统路线。">
-  <section class="section"><p class="eyebrow">LLM Notes</p><h1>学习路线</h1><p class="lead">从零基础、算法工程、大模型应用、RAG、Agent、多模态、强化学习到 AI 面试的系统路线。</p></section>
-  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/roadmaps/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+<PageLayout title="学习路线 | LLMNotes" description="用明确的阶段产出安排学习顺序。路线不是把名词排成目录，而是规定每一阶段需要理解的机制、完成的实践，以及可验证的学习结果。">
+  <section class="page-intro"><p class="overline">READING PATHS / LEARNING SEQUENCES</p><h1>学习路线</h1><p class="lead">用明确的阶段产出安排学习顺序。路线不是把名词排成目录，而是规定每一阶段需要理解的机制、完成的实践，以及可验证的学习结果。</p><p class="lead">研究者可以先进入模型与论文；应用工程师可直接从 RAG、Agent 和推理服务开始。每条路线都保留向基础章节回溯的入口。</p></section>
+  <section class="editorial-section"><div class="section-title-row"><div><span class="overline">READING INDEX / ROADMAPS</span><h2>不同目标的学习路径</h2><p>点击文章进入完整的技术解析。</p></div></div>
+    <div class="collection-list">{entries.map((entry,i)=><a href={'/roadmaps/'+entry.id} class="collection-row"><span class="collection-index">{String(i+1).padStart(2,'0')}</span><div><h3>{entry.data.title}</h3><p>{entry.data.description}</p><div class="meta"><span>{entry.data.difficulty}</span><span>{entry.data.updated.toISOString().slice(0,10)}</span><span>{entry.data.tags.slice(0,2).join(' / ')}</span></div></div><span class="collection-arrow">↗</span></a>)}</div>
+  </section>
 </PageLayout>

@@ -1,9 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import PageLayout from '../../components/layout/PageLayout.astro';
-const entries = (await getCollection('projects')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+const entries=(await getCollection('projects')).filter(x=>!x.data.draft).sort((a,b)=>a.data.order-b.data.order);
 ---
-<PageLayout title="项目实战 | LLM Notes" description="把 RAG、Code Agent、推荐系统、多模态和医学 AI 沉淀成能讲清楚的项目库。">
-  <section class="section"><p class="eyebrow">LLM Notes</p><h1>项目实战</h1><p class="lead">把 RAG、Code Agent、推荐系统、多模态和医学 AI 沉淀成能讲清楚的项目库。</p></section>
-  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/projects/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+<PageLayout title="项目实践 | LLMNotes" description="项目实践关注一个系统如何真正闭环：输入数据如何进入链路、模块如何协作、失败如何定位、结果如何被验证。展示界面只是最后一层。">
+  <section class="page-intro"><p class="overline">ENGINEERING / SYSTEM DESIGN</p><h1>项目实践</h1><p class="lead">项目实践关注一个系统如何真正闭环：输入数据如何进入链路、模块如何协作、失败如何定位、结果如何被验证。展示界面只是最后一层。</p><p class="lead">每个项目按目标定义、最小实现、测试协议和迭代方案组织。重点记录可复用的工程模式，而不是罗列框架名称。</p></section>
+  <section class="editorial-section"><div class="section-title-row"><div><span class="overline">READING INDEX / PROJECTS</span><h2>把算法放进可验证的系统</h2><p>点击文章进入完整的技术解析。</p></div></div>
+    <div class="collection-list">{entries.map((entry,i)=><a href={'/projects/'+entry.id} class="collection-row"><span class="collection-index">{String(i+1).padStart(2,'0')}</span><div><h3>{entry.data.title}</h3><p>{entry.data.description}</p><div class="meta"><span>{entry.data.difficulty}</span><span>{entry.data.updated.toISOString().slice(0,10)}</span><span>{entry.data.tags.slice(0,2).join(' / ')}</span></div></div><span class="collection-arrow">↗</span></a>)}</div>
+  </section>
 </PageLayout>

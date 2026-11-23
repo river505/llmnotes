@@ -1,8 +1,21 @@
 ---
 import PageLayout from '../../components/layout/PageLayout.astro';
-const resources = ['开源模型','数据集','论文工具','AI 开发工具','向量数据库','Agent 框架','RAG 框架','部署工具','学习资料','面试资源','软件下载'];
+const resources=[
+{group:'模型与训练',items:[
+{title:'PyTorch Documentation',url:'https://pytorch.org/docs/stable/index.html',type:'框架文档',desc:'张量、Autograd、分布式训练与性能调优的参考入口。'},
+{title:'Hugging Face Transformers',url:'https://huggingface.co/docs/transformers/index',type:'模型工程',desc:'模型配置、Tokenizer、训练器与推理 API 的官方文档。'},
+{title:'Hugging Face PEFT',url:'https://huggingface.co/docs/peft/index',type:'参数高效微调',desc:'LoRA 等参数高效微调方法的工程实现和使用规范。'}]},
+{group:'推理与系统',items:[
+{title:'vLLM',url:'https://docs.vllm.ai/',type:'推理服务',desc:'Continuous batching、PagedAttention、服务接口与性能调优。'},
+{title:'FlashAttention',url:'https://github.com/Dao-AILab/flash-attention',type:'高效注意力',desc:'IO-aware 精确注意力内核与实现代码，适合对照论文理解。'},
+{title:'ONNX Runtime',url:'https://onnxruntime.ai/docs/',type:'跨平台推理',desc:'计算图优化、运行时提供程序与模型部署。'}]},
+{group:'论文、基准与评估',items:[
+{title:'arXiv',url:'https://arxiv.org/',type:'论文检索',desc:'论文预印本及其版本记录，阅读时应核对正式发表版本。'},
+{title:'Papers with Code',url:'https://paperswithcode.com/',type:'论文与代码',desc:'查找论文对应实现与评估基准，复现前需再次核实维护状态。'},
+{title:'HELM',url:'https://crfm.stanford.edu/helm/',type:'模型评测',desc:'从场景、指标和透明评估角度组织语言模型基准。'}]}
+];
 ---
-<PageLayout title="资源 | LLM Notes" description="大模型学习和工程实践资源清单。">
-  <section class="section"><p class="eyebrow">Resources</p><h1>资源</h1><p class="lead">整理开源模型、数据集、论文工具、开发工具、向量数据库、Agent 框架、RAG 框架和部署工具。</p></section>
-  <section class="section"><div class="card-grid">{resources.map((name) => <article class="card"><h3>{name}</h3><p>名称、类型、一句话说明、适合场景、官网链接、是否免费、推荐指数和相关教程会在后续版本补全。</p></article>)}</div></section>
+<PageLayout title="技术资源索引 | LLMNotes" description="经过用途分类的模型训练、推理服务、论文与评估资源。">
+  <section class="page-intro"><span class="overline">REFERENCE / TOOL INDEX</span><h1>技术资源索引</h1><p class="lead">把长期会用到的官方文档和原始项目放在一起，并解释每项资源适合解决什么问题。资源的价值在于能够直接用于阅读源码、核对接口或搭建实验，而不是给工具排列主观星级。</p><p class="lead">优先收录官方技术资料和维护明确的开源项目。实际使用前应以对应项目的最新文档、许可和版本说明为准。</p></section>
+  {resources.map((group,i)=><section class="editorial-section" class:list={[i>0?'ruled':'']}><div class="section-title-row"><div><span class="overline">{String(i+1).padStart(2,'0')} / REFERENCES</span><h2>{group.group}</h2></div></div><div class="resource-grid">{group.items.map(item=><a class="resource-item" href={item.url} target="_blank" rel="noopener noreferrer"><div class="resource-top"><span>{item.type}</span><span>↗</span></div><h3>{item.title}</h3><p>{item.desc}</p></a>)}</div></section>)}
 </PageLayout>

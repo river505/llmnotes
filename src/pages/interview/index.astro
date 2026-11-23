@@ -1,9 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import PageLayout from '../../components/layout/PageLayout.astro';
-const entries = (await getCollection('interview')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+const entries=(await getCollection('interview')).filter(x=>!x.data.draft).sort((a,b)=>a.data.order-b.data.order);
 ---
-<PageLayout title="AI 面试指南 | LLM Notes" description="面向算法岗、工程岗和研究生求职的大模型高频面试题、项目追问和论文复述模板。">
-  <section class="section"><p class="eyebrow">LLM Notes</p><h1>AI 面试指南</h1><p class="lead">面向算法岗、工程岗和研究生求职的大模型高频面试题、项目追问和论文复述模板。</p></section>
-  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/interview/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+<PageLayout title="技术面试 | LLMNotes" description="技术面试的关键不在于背诵术语，而在于把原理解释为可推导的机制，再回答复杂度、工程取舍与实验验证方面的追问。">
+  <section class="page-intro"><p class="overline">INTERVIEW / DEEP UNDERSTANDING</p><h1>技术面试</h1><p class="lead">技术面试的关键不在于背诵术语，而在于把原理解释为可推导的机制，再回答复杂度、工程取舍与实验验证方面的追问。</p><p class="lead">建议从一个具体技术问题切入：输入输出是什么、关键设计为何有效、有哪些实现约束、如何用证据说明结果。面试题只是组织这些能力的一种索引。</p></section>
+  <section class="editorial-section"><div class="section-title-row"><div><span class="overline">READING INDEX / INTERVIEW</span><h2>按机制、取舍与验证组织回答</h2><p>点击文章进入完整的技术解析。</p></div></div>
+    <div class="collection-list">{entries.map((entry,i)=><a href={'/interview/'+entry.id} class="collection-row"><span class="collection-index">{String(i+1).padStart(2,'0')}</span><div><h3>{entry.data.title}</h3><p>{entry.data.description}</p><div class="meta"><span>{entry.data.difficulty}</span><span>{entry.data.updated.toISOString().slice(0,10)}</span><span>{entry.data.tags.slice(0,2).join(' / ')}</span></div></div><span class="collection-arrow">↗</span></a>)}</div>
+  </section>
 </PageLayout>

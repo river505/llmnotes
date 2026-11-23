@@ -1,9 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import PageLayout from '../../components/layout/PageLayout.astro';
-const entries = (await getCollection('papers')).filter((entry) => !entry.data.draft).sort((a,b) => a.data.order - b.data.order);
+const entries=(await getCollection('papers')).filter(x=>!x.data.draft).sort((a,b)=>a.data.order-b.data.order);
 ---
-<PageLayout title="论文精读 | LLM Notes" description="用一句话总结、核心方法、实验设计、局限和组会讲法来拆解经典 AI 论文。">
-  <section class="section"><p class="eyebrow">LLM Notes</p><h1>论文精读</h1><p class="lead">用一句话总结、核心方法、实验设计、局限和组会讲法来拆解经典 AI 论文。</p></section>
-  <section class="section"><div class="article-list">{entries.map((entry) => <a class="article-row" href={'/papers/' + entry.id}><strong>{entry.data.title}</strong><p>{entry.data.description}</p><div class="tags">{entry.data.tags.map((tag) => <span class="tag">{tag}</span>)}</div></a>)}</div></section>
+<PageLayout title="论文研读 | LLMNotes" description="论文不只是结论摘要。理解一个方法，需要还原它出现时的约束、核心计算、与既有方法的差异，以及实验设计怎样支撑主张。">
+  <section class="page-intro"><p class="overline">PAPER READING / ORIGINAL WORK</p><h1>论文研读</h1><p class="lead">论文不只是结论摘要。理解一个方法，需要还原它出现时的约束、核心计算、与既有方法的差异，以及实验设计怎样支撑主张。</p><p class="lead">这里按模型结构、系统效率、参数高效训练、偏好优化与 Agent 等方向整理原始工作；优先给出原论文链接、关键公式和可复现的工程解释。</p></section>
+  <section class="editorial-section"><div class="section-title-row"><div><span class="overline">READING INDEX / PAPERS</span><h2>沿关键论文追溯技术演进</h2><p>点击文章进入完整的技术解析。</p></div></div>
+    <div class="collection-list">{entries.map((entry,i)=><a href={'/papers/'+entry.id} class="collection-row"><span class="collection-index">{String(i+1).padStart(2,'0')}</span><div><h3>{entry.data.title}</h3><p>{entry.data.description}</p><div class="meta"><span>{entry.data.difficulty}</span><span>{entry.data.updated.toISOString().slice(0,10)}</span><span>{entry.data.tags.slice(0,2).join(' / ')}</span></div></div><span class="collection-arrow">↗</span></a>)}</div>
+  </section>
 </PageLayout>
