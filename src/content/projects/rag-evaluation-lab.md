@@ -63,6 +63,62 @@ source documents
 
 当某组策略表现更好时，检查是否使用了更高的上下文预算或更昂贵的模型；必要时在相同成本约束下再次比较。
 
+## 一个完整样本的标注格式
+
+评测报告能够可信，前提是样本与证据关系被清楚记录。可以用下列 JSON Lines 结构保存问题、相关证据以及不可回答标签：
+
+~~~json
+{
+  "query_id": "q_001",
+  "query": "该接口的默认超时时间是多少？",
+  "relevant_doc_ids": ["api_v3_timeout"],
+  "reference_answer": "30 秒",
+  "answerable": true,
+  "document_version": "v3"
+}
+~~~
+
+这里的数值只是演示数据。真实项目应从公开且版本明确的文档中制作标注，并由至少一名审核者检查证据片段与目标答案是否一致。若一个问题需要多个段落共同回答，应把所有必要文档 ID 都标出。
+
+## 不依赖评判模型的检索指标实现
+
+先实现纯检索指标，能帮助排除生成模型带来的不确定性。下面给出 Recall@k 和 Reciprocal Rank 的参考函数：
+
+~~~python
+def recall_at_k(retrieved, relevant, k):
+    relevant = set(relevant)
+    if not relevant:
+        return None
+    return len(set(retrieved[:k]) & relevant) / len(relevant)
+
+def reciprocal_rank(retrieved, relevant):
+    relevant = set(relevant)
+    for rank, doc_id in enumerate(retrieved, start=1):
+        if doc_id in relevant:
+            return 1.0 / rank
+    return 0.0
+
+docs = ["doc_8", "doc_3", "doc_5", "doc_1"]
+print(recall_at_k(docs, ["doc_3"], 3))  # 1.0
+print(reciprocal_rank(docs, ["doc_3"]))  # 0.5
+~~~
+
+对每个 Query 分别计算，再按查询平均；若某些问题没有相关文档，应事先定义这类问题的评价口径，而不是在分母为零时强行设为成功。
+
+## 一份可直接使用的消融设计
+
+| 实验组 | 召回器 | 重排器 | 生成模型 | 目的 |
+|---|---|---|---|---|
+| A | BM25 | 无 | 固定 | 精确词匹配基线 |
+| B | Dense | 无 | 固定 | 语义检索基线 |
+| C | BM25 + Dense | 无 | 固定 | 混合召回贡献 |
+| D | BM25 + Dense | 有 | 固定 | 重排独立贡献 |
+
+所有组共享文档版本、输入问题和生成模型配置。在这张表之后，可单独做 Chunk 长度或上下文预算的对照，避免把多个因素同时改变而无法解释收益来源。
+
+报告不仅需要总体指标，也需要逐样本的检索列表、最终答案、错误归因和成本记录。最后把“查不到”“排序错误”“有证据但回答错误”三类失败分别汇总，形成明确的下一轮优化清单。
+
+
 ## 最终交付
 
 提交一套实验配置、索引脚本、标注样本、逐条预测日志、指标计算脚本及评测报告。报告应明确数据版本、模型版本和测试时间，以便他人复现。

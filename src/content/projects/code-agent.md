@@ -6,7 +6,7 @@ section: "项目实战"
 tags: ["Code Agent","项目","工程实践"]
 difficulty: "入门"
 order: 2
-updated: "2026-07-16"
+updated: "2026-11-23"
 created: "2026-05-29"
 draft: false
 featured: true
@@ -65,6 +65,63 @@ Code Agent 是一个很适合展示大模型工程能力的项目方向，但它
 项目要有可复现评测，而不只是演示。可以准备一组小任务，每个任务包含初始仓库、用户需求、期望修改点和验证命令。指标包括任务成功率、测试通过率、平均工具调用次数、错误恢复能力和人工审阅质量。
 
 如果要做得更完整，可以记录失败类型：定位错文件、误解需求、修改过大、测试没跑、引入新 bug、总结不准确。失败分析比单纯展示成功案例更能体现项目深度。
+
+## 最小工具集与权限设计
+
+一个能用于验证的 Code Agent 不必集成几十个工具。第一版可以限制为三个只读能力（目录浏览、文件读取、代码搜索）和两个受控写入/验证能力（基于旧内容匹配的文件替换、运行指定测试）。
+
+写入接口不应接受任意目录的全量覆盖。一个较合理的参数契约是：
+
+~~~json
+{
+  "tool": "replace_in_file",
+  "arguments": {
+    "path": "src/parser.py",
+    "expected_old_text": "return None",
+    "new_text": "return []"
+  }
+}
+~~~
+
+执行器首先检查文件路径是否在授权仓库内、旧文本是否精确匹配、目标位置是否唯一，然后才执行替换。若检查失败则返回 VERSION_CONFLICT 或 AMBIGUOUS_MATCH，而不是猜测修改位置。
+
+## 一条可复现的任务轨迹
+
+假设测试要求解析空数组输入时返回空列表。Agent 先读取失败的断言，搜索调用点并确认函数契约。修改前应保存仓库版本与测试输出；修改后只对最小相关区域应用补丁，再运行目标测试与必要的回归测试。
+
+~~~text
+1. read_test_failure() → assertion mismatch
+2. search_symbol("parse_items") → two candidates
+3. read_file("src/parser.py") → inspect input contract
+4. propose_patch() → expected one-line change
+5. replace_in_file(expected_old_text, new_text)
+6. run_tests("tests/test_parser.py")
+7. verify_diff() → one authorized file changed
+8. finish() → code diff + test output + commit hash
+~~~
+
+真实失败往往发生在步骤 2、4、6：检索可能定位到错误文件，模型可能修改了不该改的接口，测试也可能揭示新的边界条件。因此评测时保留中间工具记录，比只保存最终代码更有价值。
+
+## 自动化评测如何构造
+
+从公开小型仓库选取具备可测试验收条件的问题，固定初始 Commit。每个任务都包含问题描述、授权文件范围、可执行验收命令和可观测的成功条件。
+
+定义任务成功率为通过全部指定验收检查的任务数除以任务总数：
+
+$$
+\mathrm{SuccessRate}=\frac{N_{\mathrm{passed}}}{N_{\mathrm{tasks}}}.
+$$
+
+普通写法：success_rate = successful_tasks / total_tasks。
+
+额外记录每次任务的工具调用次数、输入输出 Token、运行费用、修改文件数、首次测试通过率和人工干预比例。单纯增加循环次数可能提高成功率，也会提高成本，因此最好在固定预算下比较不同策略。
+
+## 从小型 Agent 到可维护系统
+
+当第一版工具调用稳定后，再加入文件索引、符号级代码检索、测试选择和历史状态摘要。每加入一项能力，都用同一任务集重跑基线，观察变化是否确实来自新组件。
+
+如果增加“自动规划器”后成功率没有提升、却显著增加无效调用，可能说明当前任务更适合固定流程与局部模型决策的组合。系统架构应该由失败模式与评测结果推动，而不是围绕智能体术语扩张。
+
 
 ## 常见误区
 
