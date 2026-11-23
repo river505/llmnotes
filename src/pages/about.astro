@@ -1,7 +1,18 @@
 ---
 import PageLayout from '../components/layout/PageLayout.astro';
 ---
-<PageLayout title="关于 LLM Notes | LLM Notes" description="了解 LLM Notes 的定位、内容原则和未来计划。" narrow>
-  <section class="section"><p class="eyebrow">About</p><h1>关于 LLM Notes</h1><p class="lead">LLM Notes 是一个面向 AI 研究生、算法工程师、开发者和面试准备者的系统化知识库。</p></section>
-  <section class="prose"><h2>这个网站是什么</h2><p>它不是普通个人博客，而是把大模型基础、RAG、Agent、多模态、强化学习、项目实战、论文精读和 AI 面试组织成可持续学习的文档站。</p><h2>为什么做这个网站</h2><p>大模型知识更新快，碎片内容很多，但真正能用于复盘、工程落地和面试复述的体系化材料并不多。LLM Notes 希望把概念、直觉、代码、项目和追问放到同一条学习链路里。</p><h2>适合哪些人</h2><p>适合 AI 研究生、算法工程师、AI 应用开发者、转向大模型方向的工程师，以及正在准备实习、校招或社招面试的人。</p><h2>内容原则</h2><ul><li>系统性：按路线和章节组织。</li><li>可解释：尽量用直觉、例子和图示讲清楚。</li><li>工程可落地：每个主题都尽量连接真实项目。</li><li>面试可复述：保留高频追问和回答骨架。</li><li>尽量给出参考来源。</li></ul><h2>未来计划</h2><p>后续会扩展用户投稿、评论系统、学习进度、贡献排行榜、公众号/抖音同步和 AI 学习助手。</p><h2>免责声明</h2><p>本站内容仅用于学习交流。若有错误、引用不当或版权问题，请通过联系页反馈。</p></section>
+<PageLayout title="关于 LLMNotes" description="LLMNotes 的内容组织、写作原则和技术范围。" narrow>
+  <section class="page-intro"><p class="overline">ABOUT / EDITORIAL PHILOSOPHY</p><h1>把知识写成能够继续使用的方法。</h1><p class="lead">LLMNotes 是一份持续扩展的机器学习与大模型技术笔记。围绕算法、数据、训练、评测和系统工程，解释方法为何成立，以及怎样验证。</p></section>
+  <div class="prose about-editorial">
+    <h2>从问题进入，而不是从术语开始</h2>
+    <p>阅读一项技术，先确定它要解决的约束：算力、内存、数据分布、推理延迟，还是结果的可信度。问题确定之后，再讨论算法设计和适用条件。这样的知识结构适合研究、复现和工程决策。</p>
+    <p>理解 FlashAttention，需要先理解注意力的访存模式；理解 RAG，需要把证据召回和答案生成分开评估；理解 Agent，需要同时看状态、工具接口和任务结束条件。</p>
+    <h2>每篇文章的基本结构</h2>
+    <p>完整的技术文章尽量回答四件事：方法为什么出现；关键计算与架构如何工作；实现时有哪些可量化取舍；论文或实验提供了什么证据。公式、张量形状、伪代码和原始资料都服务于这一目标。</p>
+    <h2>教程、论文与工程记录并行</h2>
+    <p>技术文档建立概念结构；论文研读还原研究问题和方法证据；项目实践讨论数据链路、测试策略及部署。不同栏目承担不同任务，不用同一套模板重复填充页面。</p>
+    <h2>修订与维护</h2>
+    <p>内容通过 Markdown 与 Git 版本管理。勘误、资料补充及选题交流可通过联系页进行。涉及研究数据和未公开成果的内容，发布前进行抽象与脱敏。</p>
+    <p><a href="/docs">技术文档 →</a>　<a href="/papers">论文研读 →</a>　<a href="/contact">联系与勘误 →</a></p>
+  </div>
 </PageLayout>
