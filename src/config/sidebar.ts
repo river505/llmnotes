@@ -2,10 +2,12 @@ export const sidebar = [
   { title:'基础与训练',slug:'llm-basics',items:[
     {title:'基础模型与 LLM',slug:'/docs/llm-basics/what-is-llm'},
     {title:'Token 与分词系统',slug:'/docs/llm-basics/tokenizer'},
-    {title:'预训练、SFT 与偏好优化',slug:'/docs/llm-basics/training-alignment'}]},
+    {title:'预训练、SFT 与偏好优化',slug:'/docs/llm-basics/training-alignment'},
+    {title:'MoE 混合专家与 Top-k 路由',slug:'/docs/llm-basics/moe-routing'}]},
   { title:'Transformer 与注意力',slug:'transformer',items:[
     {title:'四个 Token 推导 Attention',slug:'/docs/transformer/attention-four-tokens'},
     {title:'缩放因子 √dₖ 的由来',slug:'/docs/transformer/why-divide-sqrt-dk'},
+    {title:'RoPE 旋转位置编码',slug:'/docs/transformer/rope'},
     {title:'KV Cache 的显存与延迟',slug:'/docs/transformer/kv-cache'},
     {title:'GQA 与 MLA 的设计取舍',slug:'/docs/transformer/gqa-mla'}]},
   { title:'检索增强生成',slug:'rag',items:[
