@@ -106,3 +106,37 @@ const { unlockRequired = true } = Astro.props;
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modal && !modal.hidden) modal.hidden = true; });
 })();
 </script>
+
+<script is:inline>
+/* Math typography for technical notes, load only when LaTeX is present. */
+(() => {
+  const root = document.querySelector('[data-doc-content]');
+  if (!root || !root.textContent?.includes('$$')) return;
+  const style = document.createElement('link');
+  style.rel = 'stylesheet';
+  style.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css';
+  document.head.appendChild(style);
+  const katex = document.createElement('script');
+  katex.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js';
+  katex.defer = true;
+  katex.onload = () => {
+    const autoRender = document.createElement('script');
+    autoRender.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js';
+    autoRender.defer = true;
+    autoRender.onload = () => {
+      if (typeof window.renderMathInElement !== 'function') return;
+      window.renderMathInElement(root, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '\\(', right: '\\)', display: false}
+        ],
+        throwOnError: false,
+        strict: 'ignore',
+        ignoredTags: ['script','noscript','style','textarea','pre','code']
+      });
+    };
+    document.head.appendChild(autoRender);
+  };
+  document.head.appendChild(katex);
+})();
+</script>
