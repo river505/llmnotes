@@ -108,35 +108,58 @@ const { unlockRequired = true } = Astro.props;
 </script>
 
 <script is:inline>
-/* Math typography for technical notes, load only when LaTeX is present. */
+/* Lazy mathematical typesetting, with multiple CDNs and unstyled source fallback. */
 (() => {
-  const root = document.querySelector('[data-doc-content]');
-  if (!root || !root.textContent?.includes('$$')) return;
-  const style = document.createElement('link');
-  style.rel = 'stylesheet';
-  style.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css';
-  document.head.appendChild(style);
-  const katex = document.createElement('script');
-  katex.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js';
-  katex.defer = true;
-  katex.onload = () => {
-    const autoRender = document.createElement('script');
-    autoRender.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js';
-    autoRender.defer = true;
-    autoRender.onload = () => {
-      if (typeof window.renderMathInElement !== 'function') return;
-      window.renderMathInElement(root, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '\\(', right: '\\)', display: false}
-        ],
-        throwOnError: false,
-        strict: 'ignore',
-        ignoredTags: ['script','noscript','style','textarea','pre','code']
-      });
-    };
-    document.head.appendChild(autoRender);
-  };
-  document.head.appendChild(katex);
+  const content = document.querySelector('[data-doc-content]');
+  if (!content || !content.textContent?.includes('$$')) return;
+  const css = document.createElement('style');
+  css.textContent = '.doc-content .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:9px 0 15px}.doc-content .katex{font-size:1.08em}';
+  document.head.appendChild(css);
+  const providers = [
+    {base:'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/'},
+    {base:'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.22/'},
+    {base:'https://unpkg.com/katex@0.16.22/dist/'}
+  ];
+  function addStyle(url) {
+    const existing = document.getElementById('journal-katex-css');
+    if (existing) existing.remove();
+    const link = document.createElement('link');
+    link.id = 'journal-katex-css';
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+  }
+  function script(url) {
+    return new Promise((resolve, reject) => {
+      const node = document.createElement('script');
+      node.src = url;
+      node.async = true;
+      node.onload = () => resolve();
+      node.onerror = () => reject(new Error('CDN unavailable'));
+      document.head.appendChild(node);
+    });
+  }
+  (async () => {
+    for (const provider of providers) {
+      try {
+        addStyle(provider.base + 'katex.min.css');
+        if (!window.katex) await script(provider.base + 'katex.min.js');
+        if (!window.renderMathInElement) await script(provider.base + 'contrib/auto-render.min.js');
+        if (typeof window.renderMathInElement !== 'function') continue;
+        window.renderMathInElement(content, {
+          delimiters: [
+            {left:'$$', right:'$$', display:true},
+            {left:'\\(', right:'\\)', display:false}
+          ],
+          throwOnError:false,
+          strict:'ignore',
+          ignoredTags:['script','noscript','style','textarea','pre','code']
+        });
+        break;
+      } catch {
+        // Retain readable LaTeX and plain-text equations if an external source is blocked.
+      }
+    }
+  })();
 })();
 </script>
